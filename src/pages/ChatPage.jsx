@@ -59,12 +59,12 @@ export default function ChatPage() {
     
     if(!SpeechRecognition) {
       alert('Use Chrome browser for voice input')
-      return;
+      return
     }
     
     const recognition = new SpeechRecognition()
     recognition.lang = 'en-US'
-    recognition.continuous = false
+    recognition.continuous = true
     recognition.interimResults = true
     
     setIsListening(true)
@@ -77,16 +77,18 @@ export default function ChatPage() {
       setInputValue(transcript)
     }
     
-    recognition.onend = () => {
+    recognition.start()
+    
+    // Minimum 3 seconds then auto stop
+    setTimeout(() => {
+      recognition.stop()
       setIsListening(false)
-    }
+    }, 3000)
     
     recognition.onerror = (e) => {
       console.log('Voice error:', e.error)
       setIsListening(false)
     }
-    
-    recognition.start()
   };
 
   useEffect(() => {
