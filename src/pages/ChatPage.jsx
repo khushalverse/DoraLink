@@ -1065,17 +1065,15 @@ export default function ChatPage() {
             )}
 
             <div style={{
-              display:'flex',
-              alignItems:'center',
-              background:'white',
-              borderRadius:'28px',
-              padding:'8px 8px 8px 16px',
-              boxShadow:'0 2px 16px rgba(0,168,214,0.15)',
-              border:'1.5px solid rgba(0,168,214,0.2)',
-              gap:'8px',
-              maxWidth:'768px',
-              margin:'0 auto',
-              position: 'relative'
+              display: 'flex',
+              alignItems: 'center',
+              background: 'white',
+              borderRadius: '28px',
+              padding: '6px 6px 6px 8px',
+              boxShadow: '0 2px 16px rgba(0,168,214,0.15)',
+              border: '1.5px solid rgba(0,168,214,0.2)',
+              gap: '6px',
+              minHeight: '52px'
             }}>
               {showAttachMenu && (
                 <>
@@ -1258,8 +1256,10 @@ export default function ChatPage() {
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: '4px',
-                flexShrink: 0
+                flexShrink: 0,
+                alignSelf: 'center'
               }}>
                 {/* Mic button - hides when typing */}
                 {!isTyping && (
