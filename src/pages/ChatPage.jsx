@@ -31,6 +31,28 @@ export default function ChatPage() {
   const cameraRef = useRef(null);
   const galleryRef = useRef(null);
 
+  const [touchStartX, setTouchStartX] = useState(0);
+  const [touchStartY, setTouchStartY] = useState(0);
+
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const settingsRef = useRef(null);
+
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [customApiKey, setCustomApiKey] = useState(
+    localStorage.getItem('doralink_custom_key') || ''
+  );
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if(settingsRef.current && 
+         !settingsRef.current.contains(e.target)) {
+        setShowSettingsMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, []);
+
   const openCamera = () => {
     cameraRef.current.click();
     setShowAttachMenu(false);
@@ -129,7 +151,21 @@ export default function ChatPage() {
       setCurrentChatId(chat.id);
       setIsSidebarOpen(false);
     } catch(err) {
-      console.error(err);
+      console.error('Error loading chat messages:', err);
+    }
+  };
+
+  const handleDeleteChat = async (e, chatId) => {
+    e.stopPropagation()
+    try {
+      await deleteChat(chatId)
+      setSavedChats(prev => prev.filter(c => c.id !== chatId))
+      if(currentChatId === chatId) {
+        setMessages([])
+        setCurrentChatId(null)
+      }
+    } catch(err) {
+      console.error('Delete error:', err)
     }
   };
 
@@ -784,15 +820,7 @@ These tags will be hidden from user display.${memoryText}`;
                         {chat.title}
                       </span>
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteChat(chat.id);
-                          loadUserChats();
-                          if(currentChatId === chat.id) {
-                            setMessages([]);
-                            setCurrentChatId(null);
-                          }
-                        }}
+                        onClick={(e) => handleDeleteChat(e, chat.id)}
                         style={{
                           background:'none',
                           border:'none',
@@ -830,7 +858,25 @@ These tags will be hidden from user display.${memoryText}`;
         </div>
 
         {/* MAIN CONTENT - never moves */}
-        <div className="flex flex-col h-screen overflow-hidden" style={{
+        <div className="flex flex-col h-screen overflow-hidden" 
+          onTouchStart={(e) => {
+            setTouchStartX(e.touches[0].clientX)
+            setTouchStartY(e.touches[0].clientY)
+          }}
+          onTouchEnd={(e) => {
+            const deltaX = e.changedTouches[0].clientX - touchStartX
+            const deltaY = e.changedTouches[0].clientY - touchStartY
+            
+            // Only trigger if horizontal swipe and swipe started from left edge (0-50px)
+            if(deltaX > 60 && Math.abs(deltaY) < 80 && touchStartX < 50) {
+              setIsSidebarOpen(true)
+            }
+            // Swipe left to close sidebar
+            if(deltaX < -60 && Math.abs(deltaY) < 80) {
+              setIsSidebarOpen(false)
+            }
+          }}
+          style={{
           width: '100%',
           minHeight: '100vh',
           position: 'relative',
@@ -908,17 +954,173 @@ These tags will be hidden from user display.${memoryText}`;
                 }}>
                 <SquarePen size={19} color="#00A8D6" />
               </button>
-              <button style={{
-                background:'none',
-                border:'none',
-                cursor:'pointer',
-                display:'flex',
-                alignItems:'center',
-                justifyContent:'center',
-                padding:'4px'
-              }}>
-                <MoreVertical size={19} color="#00A8D6" />
-              </button>
+              
+              <div ref={settingsRef} style={{position:'relative'}}>
+                <button onClick={() => setShowSettingsMenu(!showSettingsMenu)}
+                  style={{
+                    width:'42px', height:'42px',
+                    borderRadius:'50%',
+                    background:'transparent',
+                    border:'none',
+                    cursor:'pointer',
+                    display:'flex', alignItems:'center',
+                    justifyContent:'center'
+                  }}>
+                  <MoreVertical size={19} color="#00A8D6" />
+                </button>
+
+                {showSettingsMenu && (
+                  <div style={{
+                    position:'absolute',
+                    top:'48px', right:0,
+                    background:'white',
+                    borderRadius:'16px',
+                    boxShadow:'0 8px 24px rgba(0,168,214,0.15)',
+                    border:'1px solid #E0F4FB',
+                    minWidth:'200px',
+                    overflow:'hidden',
+                    zIndex:50,
+                    animation:'popIn 0.2s ease'
+                  }}>
+                    
+                    {/* User info at top */}
+                    <div style={{
+                      padding:'14px 16px',
+                      borderBottom:'1px solid #F0F9FF',
+                      display:'flex',
+                      alignItems:'center',
+                      gap:'10px'
+                    }}>
+                      <div style={{
+                        width:'36px', height:'36px',
+                        borderRadius:'50%',
+                        background:'#E0F4FB',
+                        display:'flex',
+                        alignItems:'center',
+                        justifyContent:'center',
+                        fontSize:'16px'
+                      }}>👤</div>
+                      <div>
+                        <div style={{
+                          fontFamily:"'Nunito', sans-serif",
+                          fontWeight:'700',
+                          fontSize:'14px',
+                          color:'#1a1a1a'
+                        }}>{userName}</div>
+                        <div style={{
+                          fontSize:'11px',
+                          color:'#9ca3af'
+                        }}>{user?.email}</div>
+                      </div>
+                    </div>
+
+                    {/* Menu items */}
+                    {[
+                      { 
+                        icon:'🎨', 
+                        label:'Theme', 
+                        sub:'Blue & White',
+                        onClick: () => {}
+                      },
+                      { 
+                        icon:'🤖', 
+                        label:'AI Model', 
+                        sub:'Gemini 2.0 Flash',
+                        onClick: () => {}
+                      },
+                      { 
+                        icon:'🔑', 
+                        label:'API Key', 
+                        sub:'Manage your key',
+                        onClick: () => setShowApiKeyModal(true)
+                      },
+                      { 
+                        icon:'📊', 
+                        label:'Habit Tracker', 
+                        sub:'Track your habits',
+                        onClick: () => {
+                          window.location.href = '/habits'
+                          setShowSettingsMenu(false)
+                        }
+                      },
+                      { 
+                        icon:'ℹ️', 
+                        label:'About DoraLink', 
+                        sub:'Version 1.0',
+                        onClick: () => {}
+                      },
+                    ].map((item, i) => (
+                      <button key={i}
+                        onClick={() => {
+                          item.onClick()
+                          setShowSettingsMenu(false)
+                        }}
+                        style={{
+                          width:'100%',
+                          display:'flex',
+                          alignItems:'center',
+                          gap:'12px',
+                          padding:'12px 16px',
+                          background:'none',
+                          border:'none',
+                          cursor:'pointer',
+                          borderBottom: i < 4 ? '1px solid #F0F9FF' : 'none',
+                          textAlign:'left',
+                          transition:'background 0.15s'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background='#F0F9FF'}
+                        onMouseLeave={e => e.currentTarget.style.background='none'}
+                      >
+                        <span style={{fontSize:'18px'}}>
+                          {item.icon}
+                        </span>
+                        <div>
+                          <div style={{
+                            fontFamily:"'Nunito', sans-serif",
+                            fontWeight:'700',
+                            fontSize:'14px',
+                            color:'#1a1a1a'
+                          }}>{item.label}</div>
+                          <div style={{
+                            fontSize:'11px',
+                            color:'#9ca3af'
+                          }}>{item.sub}</div>
+                        </div>
+                      </button>
+                    ))}
+
+                    {/* Logout button */}
+                    <button
+                      onClick={async () => {
+                        await logout()
+                        setShowSettingsMenu(false)
+                      }}
+                      style={{
+                        width:'100%',
+                        display:'flex',
+                        alignItems:'center',
+                        gap:'12px',
+                        padding:'12px 16px',
+                        background:'none',
+                        border:'none',
+                        cursor:'pointer',
+                        textAlign:'left',
+                        borderTop:'1px solid #F0F9FF'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background='#FFF0F0'}
+                      onMouseLeave={e => e.currentTarget.style.background='none'}
+                    >
+                      <span style={{fontSize:'18px'}}>🚪</span>
+                      <div style={{
+                        fontFamily:"'Nunito', sans-serif",
+                        fontWeight:'700',
+                        fontSize:'14px',
+                        color:'#FF4444'
+                      }}>Logout</div>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1292,6 +1494,89 @@ These tags will be hidden from user display.${memoryText}`;
             </div>
           </div>
         </div>
+        
+        {/* API Key Modal */}
+        {showApiKeyModal && (
+          <div style={{
+            position:'fixed', inset:0,
+            background:'rgba(0,0,0,0.5)',
+            zIndex:100,
+            display:'flex',
+            alignItems:'center',
+            justifyContent:'center',
+            padding:'20px'
+          }}>
+            <div style={{
+              background:'white',
+              borderRadius:'24px',
+              padding:'24px',
+              width:'100%',
+              maxWidth:'340px',
+              animation:'popIn 0.2s ease'
+            }}>
+              <h3 style={{
+                fontFamily:"'Nunito', sans-serif",
+                color:'#00A8D6',
+                fontWeight:'800',
+                marginBottom:'8px'
+              }}>🔑 Custom API Key</h3>
+              <p style={{
+                fontSize:'13px',
+                color:'#9ca3af',
+                marginBottom:'16px',
+                fontFamily:"'Nunito', sans-serif"
+              }}>Add your own Gemini API key 
+              to avoid quota limits</p>
+              <input
+                value={customApiKey}
+                onChange={e => setCustomApiKey(e.target.value)}
+                placeholder="AIzaSy..."
+                style={{
+                  width:'100%',
+                  padding:'12px',
+                  borderRadius:'12px',
+                  border:'1.5px solid #E0F4FB',
+                  fontFamily:"'Nunito', sans-serif",
+                  fontSize:'14px',
+                  outline:'none',
+                  marginBottom:'12px',
+                  boxSizing:'border-box'
+                }}
+              />
+              <button
+                onClick={() => {
+                  localStorage.setItem(
+                    'doralink_custom_key', 
+                    customApiKey)
+                  setShowApiKeyModal(false)
+                }}
+                style={{
+                  width:'100%',
+                  padding:'12px',
+                  background:'#00A8D6',
+                  color:'white',
+                  border:'none',
+                  borderRadius:'50px',
+                  fontFamily:"'Nunito', sans-serif",
+                  fontWeight:'700',
+                  fontSize:'15px',
+                  cursor:'pointer',
+                  marginBottom:'8px'
+                }}>Save Key</button>
+              <button
+                onClick={() => setShowApiKeyModal(false)}
+                style={{
+                  width:'100%',
+                  padding:'10px',
+                  background:'none',
+                  border:'none',
+                  color:'#9ca3af',
+                  fontFamily:"'Nunito', sans-serif",
+                  cursor:'pointer'
+                }}>Cancel</button>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
