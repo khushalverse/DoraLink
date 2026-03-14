@@ -58,11 +58,21 @@ export const getChatMessages = async (chatId) => {
 
 // Delete a chat
 export const deleteChat = async (chatId) => {
+  // First delete all messages of this chat
+  const { error: msgError } = await supabase
+    .from('messages')
+    .delete()
+    .eq('chat_id', chatId)
+  
+  if(msgError) throw msgError
+
+  // Then delete the chat
   const { error } = await supabase
     .from('chats')
     .delete()
     .eq('id', chatId)
-  if (error) throw error
+  
+  if(error) throw error
 }
 
 export const saveMemory = async (userId, key, value) => {
@@ -97,4 +107,66 @@ export const deleteMemory = async (userId, key) => {
     .eq('user_id', userId)
     .eq('memory_key', key)
   if (error) throw error
+}
+
+export const getUserHabits = async (userId) => {
+  const { data, error } = await supabase
+    .from('habits')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true })
+  if(error) throw error
+  return data || []
+}
+
+export const saveHabitToDb = async (userId, habit) => {
+  const { data, error } = await supabase
+    .from('habits')
+    .insert({
+      user_id: userId,
+      name: habit.name,
+      emoji: habit.emoji,
+      category: habit.category,
+      color: habit.color,
+      streak: habit.streak || 0,
+      best_streak: habit.bestStreak || 0,
+      total_completions: habit.totalCompletions || 0,
+      completed_dates: habit.completedDates || [],
+      is_paused: habit.isPaused || false,
+      notes: habit.notes || ''
+    })
+    .select()
+    .single()
+  if(error) throw error
+  return data
+}
+
+export const updateHabitInDb = async (habitId, updates) => {
+  const { data, error } = await supabase
+    .from('habits')
+    .update({
+      name: updates.name,
+      emoji: updates.emoji,
+      category: updates.category,
+      color: updates.color,
+      streak: updates.streak,
+      best_streak: updates.bestStreak,
+      total_completions: updates.totalCompletions,
+      completed_dates: updates.completedDates,
+      is_paused: updates.isPaused,
+      notes: updates.notes
+    })
+    .eq('id', habitId)
+    .select()
+    .single()
+  if(error) throw error
+  return data
+}
+
+export const deleteHabitFromDb = async (habitId) => {
+  const { error } = await supabase
+    .from('habits')
+    .delete()
+    .eq('id', habitId)
+  if(error) throw error
 }

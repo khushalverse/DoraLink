@@ -1,8 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { callAI } from '../services/aiService';
 import { ArrowLeft, Plus, Trash2, PauseCircle, PlayCircle, Check, X, ChevronDown, StickyNote, Target } from 'lucide-react';
+import { useAuth } from '../context/AuthContext'
+import { 
+  getUserHabits, 
+  saveHabitToDb, 
+  updateHabitInDb, 
+  deleteHabitFromDb 
+} from '../services/supabase'
 
 export default function HabitPage() {
+  const { user } = useAuth()
   const [habits, setHabits] = useState([]);
   const [filter, setFilter] = useState('All');
   const [sort, setSort] = useState('Default');
@@ -87,15 +95,34 @@ export default function HabitPage() {
   ];
 
   useEffect(() => {
-    const saved = localStorage.getItem('doralink_habits');
-    if (saved) {
-      setHabits(JSON.parse(saved));
+    if(user) {
+      loadHabitsFromDb()
     }
-  }, []);
+  }, [user])
 
-  useEffect(() => {
-    localStorage.setItem('doralink_habits', JSON.stringify(habits));
-  }, [habits]);
+  const loadHabitsFromDb = async () => {
+    try {
+      const data = await getUserHabits(user.id)
+      // Convert snake_case from DB to camelCase
+      const formatted = data.map(h => ({
+        id: h.id,
+        name: h.name,
+        emoji: h.emoji,
+        category: h.category,
+        color: h.color,
+        streak: h.streak,
+        bestStreak: h.best_streak,
+        totalCompletions: h.total_completions,
+        completedDates: h.completed_dates || [],
+        isPaused: h.is_paused,
+        notes: h.notes,
+        createdAt: h.created_at
+      }))
+      setHabits(formatted)
+    } catch(err) {
+      console.error('Load habits error:', err)
+    }
+  }
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -145,105 +172,111 @@ export default function HabitPage() {
   };
 
   const toggleComplete = (id) => {
-    const today = getTodayStr();
+    const today = new Date().toDateString()
     setHabits(prev => {
-      let earnedBaseXp = 0;
-      let xpMsg = "+20 XP 🌟";
-      let justCompleted = false;
-      let habitEmoji = "";
-      
       const updated = prev.map(h => {
-        if (h.id !== id || h.isPaused) return h;
-        
-        const done = h.completedDates?.includes(today);
+        if(h.id !== id || h.isPaused) return h
+        const done = h.completedDates.includes(today)
         const newDates = done
           ? h.completedDates.filter(d => d !== today)
-          : [...(h.completedDates || []), today];
-          
-        const streak = calculateStreak(newDates);
+          : [...h.completedDates, today]
+        const streak = calculateStreak(newDates)
         
-        if (!done) {
-          justCompleted = true;
-          habitEmoji = h.emoji;
-          earnedBaseXp += 20;
-          if(streak === 7) { earnedBaseXp += 50; xpMsg = "+70 XP 🔥 7-Day Streak!"; }
-          if(streak === 30) { earnedBaseXp += 200; xpMsg = "+220 XP 👑 30-Day Streak!"; }
+        // XP logic
+        if(!done) {
+          let earnedXp = 20
+          let xpMsg = "+20 XP 🌟"
+          if(streak === 7) { earnedXp += 50; xpMsg = "+70 XP 🔥 7-Day Streak!" }
+          if(streak === 30) { earnedXp += 200; xpMsg = "+220 XP 👑 30-Day!" }
+          const newXp = xp + earnedXp
+          setXp(newXp)
+          localStorage.setItem('doralink_xp', newXp.toString())
+          setXpPopup(xpMsg)
+          setTimeout(() => setXpPopup(null), 1500)
+          const quote = QUOTES[Math.floor(Math.random() * QUOTES.length)]
+          setCelebration({ emoji: h.emoji, quote })
+          setTimeout(() => setCelebration(null), 1500)
         }
-        
-        return {
+
+        const updatedHabit = {
           ...h,
           completedDates: newDates,
           streak,
-          bestStreak: Math.max(h.bestStreak || 0, streak),
+          bestStreak: Math.max(h.bestStreak, streak),
           totalCompletions: done 
-            ? Math.max(0, h.totalCompletions - 1)
-            : (h.totalCompletions || 0) + 1
-        };
-      });
+            ? h.totalCompletions - 1 
+            : h.totalCompletions + 1
+        }
 
-      if (justCompleted) {
-         const allDone = updated.every(h2 => h2.isPaused || (h2.completedDates && h2.completedDates.includes(today)));
-         if(allDone && updated.filter(h2 => !h2.isPaused).length > 0) {
-            earnedBaseXp += 100;
-            xpMsg = "+100 XP 💎 Perfect Day!";
-         }
-         
-         setXp(pxp => {
-             const newXp = pxp + earnedBaseXp;
-             localStorage.setItem('doralink_xp', newXp.toString());
-             
-             let oldLvl = levels[0];
-             for(let l of levels) if(pxp >= l.minXp) oldLvl = l;
-             let newLvl = levels[0];
-             for(let l of levels) if(newXp >= l.minXp) newLvl = l;
-             
-             const quote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
-             if (newLvl.level > oldLvl.level) {
-                 setCelebration({ emoji: newLvl.emoji, quote: "⬆️ LEVEL UP!" });
-             } else {
-                 setCelebration({ emoji: habitEmoji, quote });
-             }
-             setTimeout(() => setCelebration(null), 1500);
-             return newXp;
-         });
-         
-         setXpPopup(xpMsg);
-         setTimeout(() => setXpPopup(null), 1500);
+        // Save to Supabase in background
+        updateHabitInDb(id, updatedHabit).catch(console.error)
+
+        return updatedHabit
+      })
+      return updated
+    })
+  }
+
+  const addHabit = async () => {
+    if(!newHabit.name.trim()) return
+    try {
+      const saved = await saveHabitToDb(user.id, {
+        ...newHabit,
+        streak: 0,
+        bestStreak: 0,
+        totalCompletions: 0,
+        completedDates: [],
+        isPaused: false
+      })
+      const formatted = {
+        id: saved.id,
+        name: saved.name,
+        emoji: saved.emoji,
+        category: saved.category,
+        color: saved.color,
+        streak: saved.streak,
+        bestStreak: saved.best_streak,
+        totalCompletions: saved.total_completions,
+        completedDates: saved.completed_dates || [],
+        isPaused: saved.is_paused,
+        notes: saved.notes,
+        createdAt: saved.created_at
       }
+      setHabits(prev => [formatted, ...prev])
+      setNewHabit({ 
+        name:'', emoji:'💪', 
+        category:'Health 🏥', 
+        color:'#00A8D6', notes:'', chainedTo: null
+      })
+      setShowEmojiGrid(false);
+      setShowAddModal(false)
+    } catch(err) {
+      console.error('Add habit error:', err)
+    }
+  }
 
-      return updated;
-    });
-  };
+  const togglePause = async (id) => {
+    const habit = habits.find(h => h.id === id)
+    if(!habit) return
+    const updated = { ...habit, isPaused: !habit.isPaused }
+    try {
+      await updateHabitInDb(id, updated)
+      setHabits(prev => prev.map(h => 
+        h.id === id ? updated : h
+      ))
+    } catch(err) {
+      console.error('Pause error:', err)
+    }
+  }
 
-  const addHabit = () => {
-    if (!newHabit.name.trim()) return;
-    const habit = {
-      id: Date.now(),
-      ...newHabit,
-      streak: 0,
-      bestStreak: 0,
-      totalCompletions: 0,
-      completedDates: [],
-      isPaused: false,
-      frequency: "daily",
-      createdAt: new Date().toISOString()
-    };
-    setHabits(prev => [habit, ...prev]);
-    setNewHabit({
-      name: '', emoji: '💪', category: 'Health 🏥',
-      color: '#00A8D6', notes: '', chainedTo: null
-    });
-    setShowEmojiGrid(false);
-    setShowAddModal(false);
-  };
-
-  const togglePause = (id) => {
-    setHabits(prev => prev.map(h => h.id === id ? { ...h, isPaused: !h.isPaused } : h));
-  };
-
-  const deleteHabit = (id) => {
-    setHabits(prev => prev.filter(h => h.id !== id));
-  };
+  const deleteHabit = async (id) => {
+    try {
+      await deleteHabitFromDb(id)
+      setHabits(prev => prev.filter(h => h.id !== id))
+    } catch(err) {
+      console.error('Delete habit error:', err)
+    }
+  }
 
   const openNotes = (habit) => {
     setNotesModal(habit.id);
