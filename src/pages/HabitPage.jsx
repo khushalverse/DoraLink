@@ -29,6 +29,19 @@ export default function HabitPage() {
   });
   const [todayMood, setTodayMood] = useState(null);
 
+  // AI Habit Coach States
+  const [showCoach, setShowCoach] = useState(false);
+  const [coachMessage, setCoachMessage] = useState('');
+  const [coachLoading, setCoachLoading] = useState(false);
+
+  // AI Roast Mode States
+  const [roastMode, setRoastMode] = useState(false);
+  const [hideRoastToday, setHideRoastToday] = useState(false);
+
+  // Goal Mode States
+  const [goal, setGoal] = useState(() => localStorage.getItem('doralink_goal') || '');
+  const [showGoalInput, setShowGoalInput] = useState(false);
+
   const levels = [
     { level:1, name:"Beginner", minXp:0, emoji:"🌱", color:"#96CEB4" },
     { level:2, name:"Rising", minXp:100, emoji:"⭐", color:"#FFEAA7" },
@@ -243,6 +256,115 @@ export default function HabitPage() {
     }
   };
 
+  // AI Utilities
+  const getCoachAdvice = async (type) => {
+      setCoachLoading(true);
+      const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+      
+      const todayStr = getTodayStr();
+      const completedTdy = habits.filter(h => h.completedDates?.includes(todayStr)).length;
+      const totHabits = habits.length;
+      const avgStreak = habits.length > 0
+        ? Math.round(habits.reduce((sum,h) => sum + h.streak, 0) / habits.length)
+        : 0;
+        
+      const habitSummary = habits.map(h => 
+        `${h.emoji} ${h.name} (${h.category}, streak: ${h.streak}, completed today: ${h.completedDates?.includes(todayStr)})`
+      ).join('\\n');
+      
+      const prompts = {
+        analyze: `You are DoraLink AI Coach - witty, smart, Hinglish-friendly.
+          Analyze these habits and give SHORT (3-4 lines) insights:
+          Habits: ${habitSummary}
+          Completed today: ${completedTdy}/${totHabits}
+          Average streak: ${avgStreak} days
+          Current XP: ${xp}
+          Be specific, encouraging, use emojis, Hinglish style.`,
+        suggest: `You are DoraLink AI Coach.
+          Based on these existing habits:
+          ${habitSummary}
+          Suggest ONE new powerful habit that complements these.
+          Format: 
+          "Habit: [name]
+          Why: [1 line reason]
+          Start with: [tiny first step]"
+          Keep it SHORT, Hinglish, fun!`,
+        streak: `You are DoraLink AI Coach.
+          User has these habits:
+          ${habitSummary}
+          Average streak: ${avgStreak} days
+          Give a SHORT motivational streak-building tip (3-4 lines).
+          Be funny, Hinglish, like a best friend pushing them!`,
+        struggling: `You are DoraLink AI Coach.
+          User is struggling with habits:
+          ${habitSummary}
+          Completed today: ${completedTdy}/${totHabits}
+          Give SHORT (3-4 lines) empathetic advice. Be supportive first, then give ONE practical tip.
+          Hinglish, warm, friendly tone.`
+      };
+      
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompts[type] }] }],
+            generationConfig: { temperature: 0.8, maxOutputTokens: 200 }
+          })
+        });
+        const data = await response.json();
+        const msg = data.candidates?.[0]?.content?.parts?.[0]?.text || "Kuch gadbad ho gayi! Try again 😅";
+        setCoachMessage(msg);
+      } catch(err) {
+        setCoachMessage("Network issue! Thoda wait karo 😅");
+      }
+      setCoachLoading(false);
+  };
+
+  const getSuggestions = (habs) => {
+      const cats = habs.map(h => h.category);
+      const suggestions = [];
+      if(!cats.find(c => c.startsWith('Health'))) suggestions.push({emoji:'💧', name:'Drink 8 glasses water', category:'Health 🏥', reason:'Most impactful health habit to start with'});
+      if(!cats.find(c => c.startsWith('Fitness'))) suggestions.push({emoji:'🏃', name:'10 min morning walk', category:'Fitness 💪', reason:'Boosts energy and mood for the whole day'});
+      if(!cats.find(c => c.startsWith('Study'))) suggestions.push({emoji:'📚', name:'Read 20 minutes', category:'Study 📚', reason:'Compound knowledge growth over time'});
+      suggestions.push({emoji:'🧘', name:'5 min meditation', category:'Personal ⭐', reason:'Reduces stress, improves focus'});
+      suggestions.push({emoji:'✍️', name:'Daily journaling', category:'Personal ⭐', reason:'Clarity of mind and self-awareness'});
+      return suggestions.slice(0,3);
+  };
+
+  const addSuggestedHabit = (s) => {
+      const habit = { id: Date.now(), name: s.name, emoji: s.emoji, category: s.category, color: '#00A8D6', streak: 0, bestStreak: 0, totalCompletions: 0, completedDates: [], isPaused: false, notes: s.reason, frequency: "daily", createdAt: new Date().toISOString() };
+      setHabits(prev => [...prev, habit]);
+  };
+
+  const saveGoal = (val) => {
+      setGoal(val);
+      localStorage.setItem('doralink_goal', val);
+      setShowGoalInput(false);
+  };
+
+  const getGoalHabits = (goalText) => {
+      const g = goalText.toLowerCase();
+      if(g.includes('jee') || g.includes('exam') || g.includes('study')) return [{emoji:'📚', name:'Study 2 hours daily', cat:'Study 📚'}, {emoji:'✍️', name:'Practice problems', cat:'Study 📚'}, {emoji:'😴', name:'Sleep by 11 PM', cat:'Health 🏥'}];
+      if(g.includes('fit') || g.includes('gym') || g.includes('weight')) return [{emoji:'🏃', name:'Exercise 30 min', cat:'Fitness 💪'}, {emoji:'💧', name:'Drink 3L water', cat:'Health 🏥'}, {emoji:'🍎', name:'No junk food', cat:'Health 🏥'}];
+      if(g.includes('code') || g.includes('dev') || g.includes('programming')) return [{emoji:'💻', name:'Code 1 hour daily', cat:'Study 📚'}, {emoji:'📚', name:'Read tech article', cat:'Study 📚'}, {emoji:'🎯', name:'Build one feature/day', cat:'Study 📚'}];
+      return [{emoji:'🌅', name:'Wake up early', cat:'Personal ⭐'}, {emoji:'📝', name:'Plan your day', cat:'Study 📚'}, {emoji:'🔄', name:'Daily review', cat:'Personal ⭐'}];
+  };
+
+  const roasts = [
+      "Bhai ek habit bhi nahi kiya aaj? Meri pocket mein shame hai tere liye 😑",
+      "WiFi bhi zyada consistent hai tujhse 📶",
+      "Even Newton's first law says 'object at rest stays at rest' — but that's not a compliment 😂",
+      "Kal se pakka club ka lifetime member ban gaya kya? 🏆",
+      "Doraemon ne gadgets diye the procrastination ke liye nahi 😭",
+      "Bhai chal ek kaam kar — sirf EK habit complete kar aaj. Bas ek. Main wait kar raha hun 👀",
+      "Your habits called. They said they miss you 😢"
+  ];
+  
+  const showRoastCard = roastMode && !hideRoastToday && habits.length > 0 && habits.filter(h => h.completedDates?.includes(getTodayStr())).length === 0 && new Date().getHours() >= 12;
+  const currentRoast = React.useMemo(() => roasts[Math.floor(Math.random() * roasts.length)], [showRoastCard]);
+
   // Stats
   const totalHabits = habits.length;
   const completedToday = habits.filter(h => h.completedDates?.includes(getTodayStr())).length;
@@ -409,6 +531,11 @@ export default function HabitPage() {
           from { opacity:0; transform:translateY(100%) }
           to { opacity:1; transform:translateY(0) }
         }
+        @keyframes roastShake {
+          0%,100% { transform:translateX(0) }
+          25% { transform:translateX(-5px) }
+          75% { transform:translateX(5px) }
+        }
         .hide-scrollbar::-webkit-scrollbar {
             display: none;
         }
@@ -451,14 +578,21 @@ export default function HabitPage() {
                 <ArrowLeft size={20} color="#00A8D6" />
               </button>
               <span style={{ fontSize: '18px', fontWeight: '800', color: '#00A8D6' }}>Habit Tracker</span>
-              <button onClick={() => setShowAddModal(true)}
-                style={{
-                  width: '40px', height: '40px', borderRadius: '50%',
-                  background: '#00A8D6', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                  boxShadow: '0 4px 10px rgba(0,168,214,0.3)'
-                }}>
-                <Plus size={20} color="white" />
-              </button>
+              <div className="flex items-center gap-2">
+                  <button onClick={() => setRoastMode(!roastMode)}
+                      className="flex items-center gap-1 bg-white border rounded-full px-2 py-1 text-[11px] shadow-sm font-bold transition-colors"
+                      style={{ color: roastMode ? '#FF6B35' : '#9ca3af', borderColor: roastMode ? '#FF6B35' : '#E0F4FB' }}>
+                      🔥 Roast {roastMode ? 'ON' : 'OFF'}
+                  </button>
+                  <button onClick={() => setShowAddModal(true)}
+                    style={{
+                      width: '40px', height: '40px', borderRadius: '50%',
+                      background: '#00A8D6', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                      boxShadow: '0 4px 10px rgba(0,168,214,0.3)'
+                    }}>
+                    <Plus size={20} color="white" />
+                  </button>
+              </div>
             </div>
 
             <div className="max-w-2xl mx-auto w-full px-4" style={{ animation: 'fadeUp 0.4s ease both' }}>
@@ -558,6 +692,39 @@ export default function HabitPage() {
                             </div>
                         </div>
                     </div>
+                </div>
+
+                {/* MY GOAL SECTION */}
+                <div className="bg-white rounded-[16px] p-[16px] mb-[24px] shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                        <h2 className="text-[16px] font-bold text-[#1a1a1a]">🎯 My Goal</h2>
+                        {goal && <button onClick={() => setShowGoalInput(!showGoalInput)} className="text-[#9ca3af] hover:text-[#00A8D6] transition-colors"><StickyNote size={14}/></button>}
+                    </div>
+                    {!goal || showGoalInput ? (
+                        <div className="mt-2" style={{ animation: 'fadeUp 0.3s ease' }}>
+                            <p className="text-[12px] text-gray-500 mb-2">{goal ? "Update your big goal!" : "Set your big goal!"}</p>
+                            <div className="flex gap-2">
+                                <input id="goalInputId" type="text" placeholder="e.g. Crack JEE 2024" className="flex-1 border border-[#E0F4FB] rounded-lg px-3 py-1.5 text-[14px] outline-none focus:border-[#00A8D6]" defaultValue={goal} style={{fontFamily:"'Nunito', sans-serif"}}/>
+                                <button onClick={() => saveGoal(document.getElementById('goalInputId').value)} className="bg-[#00A8D6] text-white px-3 py-1.5 rounded-lg text-[13px] font-bold">Save</button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div style={{ animation: 'fadeUp 0.3s ease' }}>
+                            <p className="text-[15px] font-bold text-[#00A8D6] mb-3 leading-snug">{goal}</p>
+                            <p className="text-[11px] text-gray-500 font-bold mb-2 uppercase tracking-wider">AI Habit Roadmap</p>
+                            <div className="flex flex-col gap-2">
+                                {getGoalHabits(goal).map((gh, i) => (
+                                    <div key={i} className="flex items-center justify-between bg-[#F0F9FF] p-2 rounded-lg">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[16px]">{gh.emoji}</span>
+                                            <span className="text-[13px] font-semibold text-[#1a1a1a]">{gh.name}</span>
+                                        </div>
+                                        <button onClick={() => addSuggestedHabit({emoji: gh.emoji, name: gh.name, category: gh.cat, reason: 'Goal roadmap'})} className="w-[24px] h-[24px] rounded-full bg-white text-[#00A8D6] flex items-center justify-center shadow-sm hover:scale-110 transition-transform"><Plus size={14} /></button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* FILTER + SORT BAR */}
@@ -720,6 +887,15 @@ export default function HabitPage() {
                             )})}
                         </div>
                     )}
+                    
+                    {/* ROAST CARD */}
+                    {showRoastCard && (
+                        <div className="bg-white border-2 border-[#FF8B94] rounded-[16px] p-[16px] mt-3 text-center" style={{ animation: 'roastShake 0.5s ease' }}>
+                            <div className="text-[24px] mb-2">🔥</div>
+                            <p className="text-[14px] font-bold text-[#1a1a1a] mb-3 leading-snug">"{currentRoast}"</p>
+                            <button onClick={() => setHideRoastToday(true)} className="text-[12px] bg-[#F3F4F6] px-4 py-1.5 rounded-full text-gray-600 font-semibold hover:bg-gray-200">Okay okay I'll do it 😅</button>
+                        </div>
+                    )}
                 </div>
 
                 {/* WEEKLY AI REPORT CARD */}
@@ -732,6 +908,95 @@ export default function HabitPage() {
                     </div>
                     <div className="mt-3 bg-[#F0F9FF] p-[10px] rounded-[8px] italic text-[12px] text-[#1a1a1a] font-semibold">
                         {discScore > 80 ? "You're absolutely crushing it! 🏆" : discScore > 60 ? "Solid week! Keep the momentum! 💪" : discScore > 40 ? "Room to grow — you've got this! 🌱" : "New week, fresh start! Let's go! 🚀"}
+                    </div>
+                </div>
+
+                {/* AI PATTERNS */}
+                <div className="bg-white rounded-[16px] shadow-sm p-[16px] mb-[16px] border-l-[4px] border-l-[#A29BFE]">
+                    <h3 className="text-[16px] font-bold text-[#1a1a1a] mb-3">🧠 AI Patterns</h3>
+                    
+                    {(() => {
+                        const dayStats = [0,1,2,3,4,5,6].map(i => {
+                            const d = new Date(); d.setDate(d.getDate() - i); 
+                            const dStr = d.toISOString().split('T')[0];
+                            const dayName = new Date(dStr).toLocaleDateString('en',{weekday:'short'});
+                            const done = habits.filter(h => h.completedDates?.includes(dStr)).length;
+                            return { dayName, done, total: habits.length };
+                        });
+                        
+                        let worstDay = { name: '-', misses: -1 };
+                        let bestDay = { name: '-', done: -1 };
+                        
+                        const grouped = {};
+                        dayStats.forEach(s => {
+                            if(!grouped[s.dayName]) grouped[s.dayName] = { done:0, total:0, days:0 };
+                            grouped[s.dayName].done += s.done;
+                            grouped[s.dayName].total += s.total;
+                            grouped[s.dayName].days += 1;
+                        });
+                        
+                        Object.keys(grouped).forEach(k => {
+                            const misses = grouped[k].total - grouped[k].done;
+                            if(misses > worstDay.misses) { worstDay.misses = misses; worstDay.name = k; }
+                            if(grouped[k].done > bestDay.done) { bestDay.done = grouped[k].done; bestDay.name = k; }
+                        });
+                        
+                        const avgStr = habits.length > 0 ? Math.round(habits.reduce((s,h) => s + h.streak, 0) / habits.length) : 0;
+                        const uniqueCats = new Set(habits.map(h => h.category.split(' ')[0]));
+                        const missingCat = !uniqueCats.has('Health') ? 'Health' : (!uniqueCats.has('Study') ? 'Study' : null);
+
+                        return (
+                            <div className="space-y-2">
+                                {worstDay.misses > 0 && (
+                                    <div className="bg-[#F3F4F6] rounded-xl p-[10px] flex items-center gap-2">
+                                        <span className="text-[16px]">📉</span>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[13px] font-bold text-[#1a1a1a] truncate">Most missed: {worstDay.name}</p>
+                                            <p className="text-[11px] text-gray-500 truncate">Consider reducing {worstDay.name} load</p>
+                                        </div>
+                                    </div>
+                                )}
+                                {bestDay.done > 0 && (
+                                    <div className="bg-[#F3F4F6] rounded-xl p-[10px] flex items-center gap-2">
+                                        <span className="text-[16px]">⭐</span>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[13px] font-bold text-[#1a1a1a] truncate">Best consistency: {bestDay.name}!</p>
+                                        </div>
+                                    </div>
+                                )}
+                                <div className="bg-[#F3F4F6] rounded-xl p-[10px] flex items-center gap-2">
+                                    <span className="text-[16px] shrink-0">{avgStr < 3 ? '💡' : (avgStr <= 7 ? '🔥' : '🏆')}</span>
+                                    <p className="text-[12px] font-semibold text-[#1a1a1a] flex-1 leading-tight">
+                                        {avgStr < 3 ? "Tip: Start with just 1 habit per day to build momentum" : (avgStr <= 7 ? "You're building consistency! Push through!" : "Solid streak! You've built a real habit loop!")}
+                                    </p>
+                                </div>
+                                {missingCat && (
+                                    <div className="bg-[#F3F4F6] rounded-xl p-[10px] flex items-center gap-2">
+                                        <span className="text-[16px]">💡</span>
+                                        <p className="text-[12px] font-semibold text-[#1a1a1a] flex-1 leading-tight">Try adding a {missingCat} habit for balance</p>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
+                </div>
+
+                {/* AI HABIT SUGGESTIONS */}
+                <div className="mb-[24px]">
+                    <h3 className="text-[16px] font-bold text-[#1a1a1a] mb-3">✨ Suggested for You</h3>
+                    <div className="space-y-2">
+                        {getSuggestions(habits).map((s, i) => (
+                            <div key={i} className="bg-white rounded-xl p-[12px] shadow-sm flex items-center gap-3">
+                                <div className="text-[32px]">{s.emoji}</div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-[14px] text-[#1a1a1a] truncate">{s.name}</p>
+                                    <p className="text-[11px] text-gray-500 line-clamp-2 leading-tight mt-0.5">{s.reason}</p>
+                                </div>
+                                <button onClick={() => addSuggestedHabit(s)} className="w-[36px] h-[36px] bg-[#00A8D6] rounded-full text-white flex items-center justify-center shadow-sm hover:scale-105 transition-transform shrink-0">
+                                    <Plus size={20} />
+                                </button>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
@@ -937,6 +1202,56 @@ export default function HabitPage() {
                       <div className="flex gap-2 justify-end">
                            <button onClick={() => setNotesModal(null)} className="px-4 py-2 text-[#9ca3af] text-[15px]">Close</button>
                            <button onClick={saveNotes} className="px-[16px] py-[8px] bg-[#00A8D6] text-white rounded-[8px] text-[15px] shadow-sm">Save</button>
+                      </div>
+                  </div>
+              </div>
+          )}
+
+          {/* XP POPUP */}
+          {xpPopup && (
+              <div className="fixed top-[80px] right-[16px] z-[120] bg-white rounded-xl py-[10px] px-[16px] shadow-[0_8px_24px_rgba(0,168,214,0.15)] border border-[#E0F4FB] pointer-events-none"
+                   style={{ animation: 'slideInRight 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
+                  <span className="text-[#00A8D6] font-bold text-[15px]">{xpPopup}</span>
+              </div>
+          )}
+
+          {/* AI COACH BUTTON */}
+          <button onClick={() => setShowCoach(true)}
+              className="fixed bottom-[90px] right-[16px] z-40 w-[52px] h-[52px] bg-[#00A8D6] rounded-full flex items-center justify-center text-[24px]"
+              style={{ boxShadow: '0 4px 16px rgba(0,168,214,0.4)', animation: 'float 3s ease-in-out infinite' }}>
+              🤖
+          </button>
+
+          {/* AI COACH MODAL */}
+          {showCoach && (
+              <div className="fixed inset-0 z-[80] bg-black/50 flex flex-col justify-end">
+                  <div className="bg-white w-full rounded-t-[24px] p-[24px] max-h-[70vh] flex flex-col pt-4" style={{ animation: 'slideInUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
+                      <div className="flex justify-between items-center mb-4 shrink-0">
+                          <h2 className="text-[18px] font-bold text-[#00A8D6] flex items-center gap-2 opacity-100">🤖 DoraLink Coach</h2>
+                          <button onClick={() => setShowCoach(false)} className="bg-gray-100 p-1.5 rounded-full text-gray-500 border-none transition-transform hover:scale-110"><X size={18}/></button>
+                      </div>
+                      
+                      <div className="flex-1 overflow-y-auto hide-scrollbar mb-4 min-h-[140px]">
+                          <div className="bg-[#E8F8FF] rounded-2xl p-[16px] min-h-[100px] flex flex-col justify-center">
+                              {coachLoading ? (
+                                  <div className="flex items-center justify-center h-full gap-2 py-4">
+                                      <div className="w-2.5 h-2.5 bg-[#00A8D6] rounded-full animate-bounce"></div>
+                                      <div className="w-2.5 h-2.5 bg-[#00A8D6] rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                                      <div className="w-2.5 h-2.5 bg-[#00A8D6] rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                  </div>
+                              ) : coachMessage ? (
+                                  <p className="text-[14px] text-[#1a1a1a] leading-relaxed whitespace-pre-line" style={{fontFamily:"'Nunito', sans-serif"}}>{coachMessage}</p>
+                              ) : (
+                                  <p className="text-[14px] text-[#00A8D6] font-semibold italic text-center mt-2" style={{fontFamily:"'Nunito', sans-serif"}}>I'm your AI Coach! How can I help you today?</p>
+                              )}
+                          </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2.5 shrink-0">
+                          <button onClick={() => getCoachAdvice('analyze')} className="bg-white border-[1.5px] border-[#00A8D6] rounded-xl p-[12px] text-[13px] text-[#00A8D6] font-bold active:bg-[#F0F9FF] transition-colors shadow-sm outline-none">📊 Analyze my habits</button>
+                          <button onClick={() => getCoachAdvice('suggest')} className="bg-white border-[1.5px] border-[#00A8D6] rounded-xl p-[12px] text-[13px] text-[#00A8D6] font-bold active:bg-[#F0F9FF] transition-colors shadow-sm outline-none">💡 Suggest new habit</button>
+                          <button onClick={() => getCoachAdvice('streak')} className="bg-white border-[1.5px] border-[#00A8D6] rounded-xl p-[12px] text-[13px] text-[#00A8D6] font-bold active:bg-[#F0F9FF] transition-colors shadow-sm outline-none">🔥 Boost my streak</button>
+                          <button onClick={() => getCoachAdvice('struggling')} className="bg-white border-[1.5px] border-[#00A8D6] rounded-xl p-[12px] text-[13px] text-[#00A8D6] font-bold active:bg-[#F0F9FF] transition-colors shadow-sm outline-none">😔 I'm struggling</button>
                       </div>
                   </div>
               </div>
