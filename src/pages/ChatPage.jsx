@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Menu, SquarePen, BarChart2, Wrench, Search,
   RotateCcw, BookOpen, Lightbulb, PenLine, FileText,
-  Plus, Mic, ArrowUp, ChevronDown, MoreVertical, LogOut, Trash2, Camera, ImageIcon, X
+  Plus, Mic, ArrowUp, ChevronDown, MoreVertical, LogOut, Trash2, Camera, ImageIcon, X, Paperclip
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { saveChat, saveMessage, getUserChats, getChatMessages, deleteChat, saveMemory, getUserMemory } from '../services/supabase';
@@ -23,6 +23,7 @@ export default function ChatPage() {
   const [userScrolled, setUserScrolled] = useState(false);
   const [savedChats, setSavedChats] = useState([]);
   const [userMemory, setUserMemory] = useState([]);
+  const [showEmptyWarning, setShowEmptyWarning] = useState(false);
 
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [attachedFile, setAttachedFile] = useState(null);
@@ -98,6 +99,8 @@ export default function ChatPage() {
         transcript += event.results[i][0].transcript
       }
       setInputValue(transcript)
+      recognition.stop()
+      setIsListening(false)
     }
     
     recognition.start()
@@ -252,8 +255,14 @@ export default function ChatPage() {
   const handleSend = async (textToUse) => {
     let text = typeof textToUse === 'string' ? textToUse.trim() : inputValue.trim();
     
+    if(!text && !attachedFile) {
+      setShowEmptyWarning(true)
+      setTimeout(() => setShowEmptyWarning(false), 2000)
+      return
+    }
+
     // GUARD: Synchronous lock prevents any duplicate calls
-    if ((!text && !attachedFile) || isLoadingRef.current) {
+    if (isLoadingRef.current) {
       console.log('[DoraLink] handleSend blocked - empty or already loading');
       return;
     }
@@ -386,6 +395,10 @@ export default function ChatPage() {
         @keyframes typingDot {
           0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
           30% { transform: translateY(-6px); opacity: 1; }
+        }
+        @keyframes slideInUp {
+          from { transform: translateY(100%) }
+          to { transform: translateY(0) }
         }
         @media (prefers-reduced-motion: reduce) {
           * { animation: none !important; transition: none !important; }
@@ -1016,6 +1029,34 @@ export default function ChatPage() {
               </div>
             )}
 
+            {showEmptyWarning && (
+              <div style={{
+                position: 'fixed',
+                bottom: '90px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                background: 'white',
+                borderRadius: '50px',
+                padding: '12px 24px',
+                boxShadow: '0 8px 24px rgba(0,168,214,0.2)',
+                border: '1.5px solid #E0F4FB',
+                zIndex: 50,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                animation: 'popIn 0.3s ease',
+                whiteSpace: 'nowrap'
+              }}>
+                <span style={{fontSize: '20px'}}>😅</span>
+                <span style={{
+                  fontFamily: "'Nunito', sans-serif",
+                  fontWeight: '700',
+                  fontSize: '14px',
+                  color: '#1a1a1a'
+                }}>Kuch toh likho ya photo do!</span>
+              </div>
+            )}
+
             <div style={{
               display:'flex',
               alignItems:'center',
@@ -1030,57 +1071,148 @@ export default function ChatPage() {
               position: 'relative'
             }}>
               {showAttachMenu && (
-                <div style={{
-                  position:'absolute',
-                  bottom:'60px',
-                  left:'0px',
-                  background:'white',
-                  borderRadius:'16px',
-                  boxShadow:'0 4px 20px rgba(0,168,214,0.2)',
-                  border:'1px solid #E0F4FB',
-                  overflow:'hidden',
-                  zIndex:30
-                }}>
-                  <button onClick={openCamera} style={{
-                    display:'flex', alignItems:'center',
-                    gap:'10px', padding:'14px 20px',
-                    width:'100%', border:'none',
-                    background:'none', cursor:'pointer',
-                    fontFamily:"'Nunito', sans-serif",
-                    fontSize:'14px', fontWeight:'600',
-                    color:'#1a1a1a'
+                <>
+                  <div
+                    onClick={() => setShowAttachMenu(false)}
+                    style={{
+                      position: 'fixed',
+                      inset: 0,
+                      background: 'rgba(0,0,0,0.35)',
+                      zIndex: 40
+                    }}
+                  />
+                  <div style={{
+                    position: 'fixed',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    background: 'white',
+                    borderRadius: '28px 28px 0 0',
+                    paddingBottom: '32px',
+                    zIndex: 50,
+                    animation: 'slideInUp 0.3s ease',
+                    boxShadow: '0 -8px 32px rgba(0,168,214,0.12)'
                   }}>
-                    <Camera size={18} color="#00A8D6" />
-                    Camera
-                  </button>
-                  <div style={{height:'1px', background:'#F0F9FF'}}/>
-                  <button onClick={openGallery} style={{
-                    display:'flex', alignItems:'center',
-                    gap:'10px', padding:'14px 20px',
-                    width:'100%', border:'none',
-                    background:'none', cursor:'pointer',
-                    fontFamily:"'Nunito', sans-serif",
-                    fontSize:'14px', fontWeight:'600',
-                    color:'#1a1a1a'
-                  }}>
-                    <ImageIcon size={18} color="#00A8D6" />
-                    Gallery
-                  </button>
-                </div>
+                    <div style={{
+                      width: '36px',
+                      height: '4px',
+                      background: '#E0F4FB',
+                      borderRadius: '2px',
+                      margin: '12px auto 20px auto'
+                    }}/>
+                    
+                    <p style={{
+                      fontFamily: "'Nunito', sans-serif",
+                      fontWeight: '800',
+                      fontSize: '16px',
+                      color: '#1a1a1a',
+                      padding: '0 24px',
+                      marginBottom: '16px'
+                    }}>Add karo</p>
+
+                    <button
+                      onClick={openCamera}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '16px',
+                        padding: '14px 24px',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        borderBottom: '1px solid #F0F9FF',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <div style={{
+                        width: '52px',
+                        height: '52px',
+                        borderRadius: '16px',
+                        background: 'linear-gradient(135deg, #E0F4FB, #B8E4F5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '24px',
+                        flexShrink: 0
+                      }}>📷</div>
+                      <div>
+                        <div style={{
+                          fontFamily: "'Nunito', sans-serif",
+                          fontWeight: '700',
+                          fontSize: '16px',
+                          color: '#1a1a1a'
+                        }}>Camera se Photo lo</div>
+                        <div style={{
+                          fontFamily: "'Nunito', sans-serif",
+                          fontSize: '13px',
+                          color: '#9ca3af',
+                          marginTop: '2px'
+                        }}>Abhi photo khicho aur bhejo</div>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={openGallery}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '16px',
+                        padding: '14px 24px',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <div style={{
+                        width: '52px',
+                        height: '52px',
+                        borderRadius: '16px',
+                        background: 'linear-gradient(135deg, #E8F5E9, #C8E6C9)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '24px',
+                        flexShrink: 0
+                      }}>🖼️</div>
+                      <div>
+                        <div style={{
+                          fontFamily: "'Nunito', sans-serif",
+                          fontWeight: '700',
+                          fontSize: '16px',
+                          color: '#1a1a1a'
+                        }}>Gallery se Choose karo</div>
+                        <div style={{
+                          fontFamily: "'Nunito', sans-serif",
+                          fontSize: '13px',
+                          color: '#9ca3af',
+                          marginTop: '2px'
+                        }}>Phone se photo select karo</div>
+                      </div>
+                    </button>
+                  </div>
+                </>
               )}
 
-              {/* Plus button */}
-              <button 
-                onClick={() => setShowAttachMenu(!showAttachMenu)}
+              <button
+                onClick={() => setShowAttachMenu(true)}
                 style={{
-                  width:'30px', height:'30px',
-                  background:'none', border:'none',
-                  cursor:'pointer', flexShrink:0,
-                  display:'flex', alignItems:'center',
-                  justifyContent:'center',
-                  transition: 'transform 0.2s'
-                }}>
-                <Plus size={20} color="#9ca3af" style={{ transform: showAttachMenu ? 'rotate(45deg)' : 'none' }} />
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '14px',
+                  background: '#E0F4FB',
+                  border: '1.5px solid #B8E4F5',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  transition: 'transform 0.2s ease'
+                }}
+              >
+                <Paperclip size={19} color="#00A8D6" />
               </button>
 
               <input 
@@ -1116,71 +1248,94 @@ export default function ChatPage() {
                 placeholder="Ask DoraLink..."
               />
 
-              {/* Mic / Stop / Send - Unified Button Holder */}
-              {isTyping ? (
-                // AI typing = STOP button (replaces mic)
-                <button
-                  onClick={stopResponse}
-                  style={{
-                    width:'38px', height:'38px',
-                    borderRadius:'50%',
-                    background:'#00A8D6',
-                    border:'none', cursor:'pointer',
-                    display:'flex', alignItems:'center',
-                    justifyContent:'center',
-                    flexShrink:0
-                  }}>
-                  <div style={{
-                    width:'12px', height:'12px',
-                    background:'white',
-                    borderRadius:'2px'
-                  }}/>
-                </button>
-              ) : (inputValue.trim() || attachedFile) ? (
-                // User typing = SEND button
-                <button
-                  onClick={() => handleSend(inputValue)}
-                  style={{
-                    width:'38px', height:'38px',
-                    borderRadius:'50%',
-                    background:'#00A8D6',
-                    border:'none', cursor:'pointer',
-                    display:'flex', alignItems:'center',
-                    justifyContent:'center',
-                    flexShrink:0,
-                    animation:'popIn 0.2s ease forwards'
-                  }}>
-                  <ArrowUp size={18} color="white" />
-                </button>
-              ) : isListening ? (
-                // LISTENING state - pulsing red mic
-                <button onClick={() => setIsListening(false)}
-                  style={{
-                    width:'38px', height:'38px',
-                    borderRadius:'50%',
-                    background:'#FF4444',
-                    border:'none', cursor:'pointer',
-                    display:'flex', alignItems:'center',
-                    justifyContent:'center',
-                    flexShrink:0,
-                    animation:'pulse 1s ease-in-out infinite'
-                  }}>
-                  <Mic size={18} color="white" />
-                </button>
-              ) : (
-                // Default = MIC button
-                <button onClick={startVoiceInput} style={{
-                  width:'38px', height:'38px',
-                  borderRadius:'50%',
-                  background:'#E0F4FB',
-                  border:'none', cursor:'pointer',
-                  display:'flex', alignItems:'center',
-                  justifyContent:'center',
-                  flexShrink:0
-                }}>
-                  <Mic size={18} color="#00A8D6" />
-                </button>
-              )}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                flexShrink: 0
+              }}>
+                {/* Mic button - hides when typing */}
+                {!isTyping && (
+                  <button
+                    onClick={startVoiceInput}
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      background: isListening ? '#FF4444' : '#F0F9FF',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      opacity: inputValue.trim() ? 0 : 1,
+                      transform: inputValue.trim()
+                        ? 'scale(0) translateX(10px)'
+                        : 'scale(1) translateX(0)',
+                      transition: 'all 0.25s ease',
+                      pointerEvents: inputValue.trim() ? 'none' : 'auto',
+                      animation: isListening
+                        ? 'pulse 1s ease-in-out infinite'
+                        : 'none'
+                    }}
+                  >
+                    <Mic size={15} color={
+                      isListening ? "white" : "#00A8D6"
+                    }/>
+                  </button>
+                )}
+
+                {/* Stop OR Send button */}
+                {isTyping ? (
+                  <button
+                    onClick={stopResponse}
+                    style={{
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '50%',
+                      background: '#00A8D6',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <div style={{
+                      width: '12px',
+                      height: '12px',
+                      background: 'white',
+                      borderRadius: '2px'
+                    }}/>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleSend(inputValue)}
+                    style={{
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '50%',
+                      background: (inputValue.trim() || attachedFile)
+                        ? '#00A8D6'
+                        : '#E0F4FB',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      transition: 'background 0.2s ease'
+                    }}
+                  >
+                    <ArrowUp
+                      size={18}
+                      color={(inputValue.trim() || attachedFile) ? "white" : "#00A8D6"}
+                    />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
