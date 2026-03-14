@@ -16,9 +16,45 @@ export default function HabitPage() {
   
   const [newHabit, setNewHabit] = useState({
     name: '', emoji: '💪', category: 'Health 🏥', 
-    color: '#00A8D6', notes: ''
+    color: '#00A8D6', notes: '', chainedTo: null
   });
   const [editingNotes, setEditingNotes] = useState('');
+  
+  const [xp, setXp] = useState(() => parseInt(localStorage.getItem('doralink_xp') || '0'));
+  const [xpPopup, setXpPopup] = useState(null);
+  
+  const [moodList, setMoodList] = useState(() => {
+    const saved = localStorage.getItem('doralink_mood');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [todayMood, setTodayMood] = useState(null);
+
+  const levels = [
+    { level:1, name:"Beginner", minXp:0, emoji:"🌱", color:"#96CEB4" },
+    { level:2, name:"Rising", minXp:100, emoji:"⭐", color:"#FFEAA7" },
+    { level:3, name:"Consistent", minXp:300, emoji:"🔥", color:"#FF8B94" },
+    { level:4, name:"Dedicated", minXp:600, emoji:"💪", color:"#45B7D1" },
+    { level:5, name:"Champion", minXp:1000, emoji:"🏆", color:"#A29BFE" },
+    { level:6, name:"Legend", minXp:1500, emoji:"👑", color:"#FD79A8" },
+    { level:7, name:"Discipline Master", minXp:2500, emoji:"🧠", color:"#00A8D6" }
+  ];
+
+  const getCurrentLevel = (currentXp) => {
+    let current = levels[0];
+    for(let l of levels) if(currentXp >= l.minXp) current = l;
+    return current;
+  };
+  const getNextLevel = (currentXp) => {
+    return levels.find(l => l.minXp > currentXp) || levels[levels.length-1];
+  };
+  
+  const handleMoodSelect = (m) => {
+      setTodayMood(m);
+      const newMoodList = [...moodList, { date: getTodayStr(), mood: m }];
+      setMoodList(newMoodList);
+      localStorage.setItem('doralink_mood', JSON.stringify(newMoodList));
+  };
+  const MOODS = ['😊', '😐', '😔', '😡', '😴'];
 
   const EMOJIS = ["💪","📚","🏃","💧","🧘","🎯","⭐","🌟","🔥","💡","🎨","🎵","🌱","❤️","😴","🍎","✍️","🧠","🏋️","🚴","🙏","💰","🌅","🎉"];
   const CATEGORIES = ["Health 🏥", "Study 📚", "Fitness 💪", "Personal ⭐", "Other 🎯"];
@@ -96,32 +132,73 @@ export default function HabitPage() {
 
   const toggleComplete = (id) => {
     const today = getTodayStr();
-    setHabits(prev => prev.map(h => {
-      if (h.id !== id || h.isPaused) return h;
+    setHabits(prev => {
+      let earnedBaseXp = 0;
+      let xpMsg = "+20 XP 🌟";
+      let justCompleted = false;
+      let habitEmoji = "";
       
-      const done = h.completedDates?.includes(today);
-      const newDates = done
-        ? h.completedDates.filter(d => d !== today)
-        : [...(h.completedDates || []), today];
+      const updated = prev.map(h => {
+        if (h.id !== id || h.isPaused) return h;
         
-      const streak = calculateStreak(newDates);
-      
-      if (!done) {
-        const quote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
-        setCelebration({ emoji: h.emoji, quote });
-        setTimeout(() => setCelebration(null), 1500);
+        const done = h.completedDates?.includes(today);
+        const newDates = done
+          ? h.completedDates.filter(d => d !== today)
+          : [...(h.completedDates || []), today];
+          
+        const streak = calculateStreak(newDates);
+        
+        if (!done) {
+          justCompleted = true;
+          habitEmoji = h.emoji;
+          earnedBaseXp += 20;
+          if(streak === 7) { earnedBaseXp += 50; xpMsg = "+70 XP 🔥 7-Day Streak!"; }
+          if(streak === 30) { earnedBaseXp += 200; xpMsg = "+220 XP 👑 30-Day Streak!"; }
+        }
+        
+        return {
+          ...h,
+          completedDates: newDates,
+          streak,
+          bestStreak: Math.max(h.bestStreak || 0, streak),
+          totalCompletions: done 
+            ? Math.max(0, h.totalCompletions - 1)
+            : (h.totalCompletions || 0) + 1
+        };
+      });
+
+      if (justCompleted) {
+         const allDone = updated.every(h2 => h2.isPaused || (h2.completedDates && h2.completedDates.includes(today)));
+         if(allDone && updated.filter(h2 => !h2.isPaused).length > 0) {
+            earnedBaseXp += 100;
+            xpMsg = "+100 XP 💎 Perfect Day!";
+         }
+         
+         setXp(pxp => {
+             const newXp = pxp + earnedBaseXp;
+             localStorage.setItem('doralink_xp', newXp.toString());
+             
+             let oldLvl = levels[0];
+             for(let l of levels) if(pxp >= l.minXp) oldLvl = l;
+             let newLvl = levels[0];
+             for(let l of levels) if(newXp >= l.minXp) newLvl = l;
+             
+             const quote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+             if (newLvl.level > oldLvl.level) {
+                 setCelebration({ emoji: newLvl.emoji, quote: "⬆️ LEVEL UP!" });
+             } else {
+                 setCelebration({ emoji: habitEmoji, quote });
+             }
+             setTimeout(() => setCelebration(null), 1500);
+             return newXp;
+         });
+         
+         setXpPopup(xpMsg);
+         setTimeout(() => setXpPopup(null), 1500);
       }
-      
-      return {
-        ...h,
-        completedDates: newDates,
-        streak,
-        bestStreak: Math.max(h.bestStreak || 0, streak),
-        totalCompletions: done 
-          ? Math.max(0, h.totalCompletions - 1)
-          : (h.totalCompletions || 0) + 1
-      };
-    }));
+
+      return updated;
+    });
   };
 
   const addHabit = () => {
@@ -140,7 +217,7 @@ export default function HabitPage() {
     setHabits(prev => [habit, ...prev]);
     setNewHabit({
       name: '', emoji: '💪', category: 'Health 🏥',
-      color: '#00A8D6', notes: ''
+      color: '#00A8D6', notes: '', chainedTo: null
     });
     setShowEmojiGrid(false);
     setShowAddModal(false);
@@ -257,6 +334,36 @@ export default function HabitPage() {
       return `${completedThatDay} habits done`;
   };
 
+  const currentLvl = getCurrentLevel(xp);
+  const nextLvl = getNextLevel(xp);
+  const xpProgress = nextLvl.minXp > currentLvl.minXp 
+    ? ((xp - currentLvl.minXp) / (nextLvl.minXp - currentLvl.minXp)) * 100 
+    : 100;
+
+  const prodHabits = habits.filter(h => h.category.startsWith('Study') || h.category.startsWith('Personal'));
+  const healthHabits = habits.filter(h => h.category.startsWith('Health') || h.category.startsWith('Fitness'));
+  
+  const calcScore = (habs) => {
+    if(habs.length === 0) return 0;
+    let totalPct = 0;
+    habs.forEach(h => {
+        let hDone = 0;
+        weekDates.forEach(d => { if(h.completedDates?.includes(d)) hDone++; });
+        totalPct += (hDone / 7) * 100;
+    });
+    return Math.round(totalPct / habs.length);
+  };
+  
+  const prodScore = calcScore(prodHabits);
+  const healthScore = calcScore(healthHabits);
+  const discScore = calcScore(habits);
+  const lifeScore = habits.length === 0 ? 0 : Math.round((prodScore + healthScore + discScore) / 3);
+
+  let lifeScoreText = "😔 Needs Work";
+  if(lifeScore > 40) lifeScoreText = "😊 Getting Better";
+  if(lifeScore > 70) lifeScoreText = "🔥 On Fire";
+  if(lifeScore > 90) lifeScoreText = "👑 Legendary";
+
   return (
     <>
       <style>{`
@@ -293,6 +400,14 @@ export default function HabitPage() {
         @keyframes pulse {
           0%,100% { transform:scale(1); opacity:0.8 }
           50% { transform:scale(1.05); opacity:1 }
+        }
+        @keyframes slideInRight {
+          from { opacity:0; transform:translateX(100px) }
+          to { opacity:1; transform:translateX(0) }
+        }
+        @keyframes slideInUp {
+          from { opacity:0; transform:translateY(100%) }
+          to { opacity:1; transform:translateY(0) }
         }
         .hide-scrollbar::-webkit-scrollbar {
             display: none;
@@ -348,6 +463,24 @@ export default function HabitPage() {
 
             <div className="max-w-2xl mx-auto w-full px-4" style={{ animation: 'fadeUp 0.4s ease both' }}>
                 
+                {/* MOOD TRACKER */}
+                <div className="mb-4 mt-2">
+                    <p className="text-[13px] text-gray-500 font-bold mb-2 text-center">How are you feeling?</p>
+                    <div className="flex justify-center gap-3">
+                        {MOODS.map(m => (
+                            <button key={m} onClick={() => handleMoodSelect(m)}
+                                className="w-[36px] h-[36px] rounded-full flex items-center justify-center transition-all bg-white shadow-sm"
+                                style={{
+                                    border: todayMood === m ? '2px solid #00A8D6' : '1px solid #E0F4FB',
+                                    transform: todayMood === m ? 'scale(1.2)' : 'scale(1)'
+                                }}>
+                                <span className="text-[18px]">{m}</span>
+                            </button>
+                        ))}
+                    </div>
+                    {todayMood && <p className="text-center text-[#00A8D6] text-[12px] mt-2 font-bold" style={{ animation: 'slideInUp 0.3s ease' }}>Got it! Keep going 💙</p>}
+                </div>
+
                 {/* STATS ROW */}
                 <div className="flex gap-3 mb-6 overflow-x-auto hide-scrollbar pb-2 pt-2 snap-x">
                     {[
@@ -361,6 +494,70 @@ export default function HabitPage() {
                             <span className="text-[11px] text-[#9ca3af] font-semibold tracking-wide whitespace-nowrap">{stat.l}</span>
                         </div>
                     ))}
+                </div>
+
+                {/* XP CARD */}
+                <div className="bg-white rounded-[16px] shadow-sm p-[16px] mb-[12px]">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                            <div className="text-[28px] leading-none">{currentLvl.emoji}</div>
+                            <div>
+                                <div className="font-bold text-[#1a1a1a] text-[16px]">{currentLvl.name}</div>
+                                <div className="text-[12px] text-gray-500">Level {currentLvl.level}</div>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-[14px] font-bold text-[#1a1a1a]">{xp} <span className="text-gray-400 text-[12px]">/ {nextLvl.minXp} XP</span></div>
+                            <div className="text-[11px] text-gray-500">Next: {nextLvl.name}</div>
+                        </div>
+                    </div>
+                    <div className="bg-[#F0F9FF] rounded-full h-[10px] overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-1000"
+                             style={{
+                                 width: `${Math.min(100, xpProgress)}%`,
+                                 background: 'linear-gradient(to right, #00A8D6, #0078B8)'
+                             }} />
+                    </div>
+                </div>
+
+                {/* LIFE SCORE CARD */}
+                <div className="bg-white rounded-[16px] p-[16px] mb-[24px] shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-[16px] font-bold text-[#1a1a1a]">Life Score 📊</h2>
+                        <div className="text-right">
+                           <div className="text-[24px] font-bold leading-none" style={{ color: lifeScore > 70 ? '#FF6B35' : (lifeScore > 40 ? '#00A8D6' : '#FF8B94') }}>{lifeScore}</div>
+                           <div className="text-[11px] text-gray-500">{lifeScoreText}</div>
+                        </div>
+                    </div>
+                    <div className="space-y-3">
+                        <div>
+                            <div className="flex justify-between text-[13px] mb-1">
+                                <span className="text-gray-600 font-bold">Productivity</span>
+                                <span className="text-[#A29BFE] font-bold">{prodScore}%</span>
+                            </div>
+                            <div className="h-[8px] bg-[#F0F9FF] rounded-full overflow-hidden">
+                                <div className="h-full bg-[#A29BFE] transition-all" style={{ width: `${prodScore}%` }}/>
+                            </div>
+                        </div>
+                        <div>
+                            <div className="flex justify-between text-[13px] mb-1">
+                                <span className="text-gray-600 font-bold">Health</span>
+                                <span className="text-[#4ECDC4] font-bold">{healthScore}%</span>
+                            </div>
+                            <div className="h-[8px] bg-[#F0F9FF] rounded-full overflow-hidden">
+                                <div className="h-full bg-[#4ECDC4] transition-all" style={{ width: `${healthScore}%` }}/>
+                            </div>
+                        </div>
+                        <div>
+                            <div className="flex justify-between text-[13px] mb-1">
+                                <span className="text-gray-600 font-bold">Discipline</span>
+                                <span className="text-[#FF8B94] font-bold">{discScore}%</span>
+                            </div>
+                            <div className="h-[8px] bg-[#F0F9FF] rounded-full overflow-hidden">
+                                <div className="h-full bg-[#FF8B94] transition-all" style={{ width: `${discScore}%` }}/>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* FILTER + SORT BAR */}
@@ -479,6 +676,11 @@ export default function HabitPage() {
                                             {habit.notes && (
                                                 <p className="text-[12px] text-[#9ca3af] italic truncate mt-1">{habit.notes}</p>
                                             )}
+                                            {habit.chainedTo && (
+                                                <div className="flex items-center gap-1 mt-1 text-[11px] text-[#00A8D6] font-semibold bg-[#E8F8FF] px-2 py-0.5 rounded-full w-fit">
+                                                    ↳ {habits.find(h => h.id === habit.chainedTo)?.name || "Deleted"}
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Actions */}
@@ -518,6 +720,19 @@ export default function HabitPage() {
                             )})}
                         </div>
                     )}
+                </div>
+
+                {/* WEEKLY AI REPORT CARD */}
+                <div className="bg-white rounded-[16px] shadow-sm p-[16px] mb-[16px] mt-[16px] border-l-[4px] border-l-[#00A8D6]">
+                    <h3 className="text-[16px] font-bold text-[#1a1a1a] mb-3">📊 Weekly Report</h3>
+                    <div className="text-[13px] text-gray-600 space-y-1">
+                        <p>• Habits completed: <span className="font-bold text-[#00A8D6]">{completedToday * 7}</span> (est)</p>
+                        <p>• Current streak max: <span className="font-bold text-[#FF6B35]">{bestStreakAll} days 🔥</span></p>
+                        <p>• Overall completion: <span className="font-bold text-[#4ECDC4]">{discScore}%</span></p>
+                    </div>
+                    <div className="mt-3 bg-[#F0F9FF] p-[10px] rounded-[8px] italic text-[12px] text-[#1a1a1a] font-semibold">
+                        {discScore > 80 ? "You're absolutely crushing it! 🏆" : discScore > 60 ? "Solid week! Keep the momentum! 💪" : discScore > 40 ? "Room to grow — you've got this! 🌱" : "New week, fresh start! Let's go! 🚀"}
+                    </div>
                 </div>
 
                 {/* PROGRESS SECTION */}
@@ -662,6 +877,21 @@ export default function HabitPage() {
                             ))}
                         </div>
                     </div>
+
+                    {/* Chain After */}
+                    {habits.length > 0 && (
+                        <div className="mb-5">
+                            <label className="block text-[13px] font-bold text-gray-500 mb-2">Chain after habit: (optional)</label>
+                            <select value={newHabit.chainedTo || ""} onChange={e => setNewHabit({...newHabit, chainedTo: e.target.value ? parseInt(e.target.value) : null})}
+                                className="w-full bg-white border-[1.5px] border-[#E0F4FB] rounded-[12px] px-[16px] py-[10px] text-[14px] focus:outline-none focus:border-[#00A8D6] text-gray-700"
+                                style={{fontFamily:"'Nunito', sans-serif"}}>
+                                <option value="">None</option>
+                                {habits.map(h => (
+                                    <option key={h.id} value={h.id}>{h.emoji} {h.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
                     {/* Color picker */}
                     <div className="mb-5">
