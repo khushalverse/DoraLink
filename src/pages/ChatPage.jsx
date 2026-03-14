@@ -53,39 +53,40 @@ export default function ChatPage() {
   };
 
   const startVoiceInput = () => {
-    if(!('webkitSpeechRecognition' in window) && 
-       !('SpeechRecognition' in window)) {
-      alert('Voice input not supported in this browser');
+    const SpeechRecognition = 
+      window.SpeechRecognition || 
+      window.webkitSpeechRecognition
+    
+    if(!SpeechRecognition) {
+      alert('Use Chrome browser for voice input')
       return;
     }
     
-    const SpeechRecognition = 
-      window.SpeechRecognition || 
-      window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'en-US'
+    recognition.continuous = false
+    recognition.interimResults = true
     
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'hi-IN'; // Hindi + English
-    recognition.interimResults = true;
-    recognition.continuous = false;
-    
-    setIsListening(true);
+    setIsListening(true)
     
     recognition.onresult = (event) => {
-      const transcript = Array.from(event.results)
-        .map(result => result[0].transcript)
-        .join('');
-      setInputValue(transcript);
-    };
+      let transcript = ''
+      for(let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript
+      }
+      setInputValue(transcript)
+    }
     
     recognition.onend = () => {
-      setIsListening(false);
-    };
+      setIsListening(false)
+    }
     
-    recognition.onerror = () => {
-      setIsListening(false);
-    };
+    recognition.onerror = (e) => {
+      console.log('Voice error:', e.error)
+      setIsListening(false)
+    }
     
-    recognition.start();
+    recognition.start()
   };
 
   useEffect(() => {
@@ -1229,15 +1230,22 @@ These tags will be hidden from user display.${memoryText}`
                 <Plus size={20} color="#9ca3af" style={{ transform: showAttachMenu ? 'rotate(45deg)' : 'none' }} />
               </button>
 
-              <input ref={cameraRef} type="file" 
-                accept="image/*" capture="environment"
+              <input 
+                ref={cameraRef} 
+                type="file" 
+                accept="image/*" 
+                capture="environment"
                 style={{display:'none'}}
-                onChange={handleFileSelect} />
-              
-              <input ref={galleryRef} type="file"
+                onChange={handleFileSelect} 
+              />
+
+              <input 
+                ref={galleryRef} 
+                type="file" 
                 accept="image/*,application/pdf,.doc,.docx"
                 style={{display:'none'}}
-                onChange={handleFileSelect} />
+                onChange={handleFileSelect} 
+              />
 
               {/* Input */}
               <input
