@@ -33,6 +33,14 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const formatAIMessage = (text) => {
+    if (!text) return '';
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/#{1,6}\s/g, '');
+  };
+
   const handleScroll = (e) => {
     const el = e.target;
     // If user is within 50px of bottom, consider them NOT scrolled up
@@ -868,7 +876,7 @@ Use this occasionally — it's your signature line!`
                           color:'#1a1a1a',
                           whiteSpace:'pre-wrap'
                         }}>
-                          {msg.content}
+                          {formatAIMessage(msg.content)}
                         </div>
                       </div>
                     )}
