@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Plus, Trash2, PauseCircle, PlayCircle, Check, X, ChevronDown, StickyNote, Target } from 'lucide-react';
 
 export default function HabitPage() {
@@ -6,6 +6,7 @@ export default function HabitPage() {
   const [filter, setFilter] = useState('All');
   const [sort, setSort] = useState('Default');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const sortRef = useRef(null);
   const [celebration, setCelebration] = useState(null);
   
   const [progressTab, setProgressTab] = useState('This Week');
@@ -45,6 +46,16 @@ export default function HabitPage() {
   useEffect(() => {
     localStorage.setItem('doralink_habits', JSON.stringify(habits));
   }, [habits]);
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if(sortRef.current && !sortRef.current.contains(e.target)) {
+        setShowSortDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, []);
 
   const getTodayStr = () => {
     const d = new Date();
@@ -370,16 +381,29 @@ export default function HabitPage() {
                     </div>
                     {/* SORT BUTTON */}
                     <div className="absolute right-0 bg-gradient-to-l from-[#F0F9FF] via-[#F0F9FF] to-transparent pl-8 h-full flex items-center">
-                        <div className="relative">
+                        <div className="relative" ref={sortRef}>
                             <button onClick={() => setShowSortDropdown(!showSortDropdown)}
                                 className="flex items-center gap-1 bg-white border border-[#00A8D6] rounded-full px-3 py-1.5 text-[14px] text-[#00A8D6] shadow-sm">
                                 {sort.split(' ')[0] === 'By' ? sort : sort} <ChevronDown size={14} />
                             </button>
                             {showSortDropdown && (
-                                <div className="absolute right-0 top-full mt-1 bg-white border border-[#E0F4FB] rounded-xl shadow-lg z-20 py-1 w-36 overflow-hidden">
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    right: 0,
+                                    zIndex: 50,
+                                    background: 'white',
+                                    borderRadius: '12px',
+                                    boxShadow: '0 8px 24px rgba(0,168,214,0.15)',
+                                    border: '1px solid #E0F4FB',
+                                    minWidth: '140px',
+                                    overflow: 'hidden',
+                                    marginTop: '4px'
+                                }}>
                                      {["Default", "By Streak 🔥", "By Name 📝"].map(s => (
                                          <button key={s} onClick={() => { setSort(s); setShowSortDropdown(false); }}
-                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#F0F9FF] hover:text-[#00A8D6]">
+                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#F0F9FF] hover:text-[#00A8D6]"
+                                            style={{ border: 'none', background: 'none', cursor: 'pointer', fontFamily: "'Nunito', sans-serif" }}>
                                             {s}
                                          </button>
                                      ))}
