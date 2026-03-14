@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
 import ChatPage from './pages/ChatPage';
+import HabitPage from './pages/HabitPage';
 
 import { useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
@@ -51,6 +52,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/chat" replace />} />
           <Route path="/chat" element={<ChatPage />} />
+          <Route path="/habits" element={<HabitPage />} />
         </Routes>
       </div>
     </BrowserRouter>

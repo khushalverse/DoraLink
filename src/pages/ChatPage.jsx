@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Menu, SquarePen, BarChart2, Wrench, Search,
   RotateCcw, BookOpen, Lightbulb, PenLine, FileText,
@@ -8,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { saveChat, saveMessage, getUserChats, getChatMessages, deleteChat, saveMemory, getUserMemory } from '../services/supabase';
 
 export default function ChatPage() {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const userName = user?.user_metadata?.full_name 
     || user?.email?.split('@')[0] 
@@ -686,7 +688,7 @@ These tags will be hidden from user display.${memoryText}`
             </button>
             <div className="my-4 border-t border-gray-100" />
             <div className="space-y-1 mb-6">
-              <button className="flex items-center w-full py-2 px-3 hover:bg-gray-100 rounded-lg text-[#1a1a1a]">
+              <button onClick={() => navigate('/habits')} className="flex items-center w-full py-2 px-3 hover:bg-gray-100 rounded-lg text-[#1a1a1a]">
                 <BarChart2 className="w-5 h-5 mr-3 text-[#6b7280]" />
                 <span className="text-sm" style={{ fontFamily: "'Nunito', sans-serif" }}>Habit Tracker</span>
               </button>
