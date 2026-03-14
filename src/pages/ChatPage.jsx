@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Menu, SquarePen, BarChart2, Wrench, Search,
   RotateCcw, BookOpen, Lightbulb, PenLine, FileText,
-  Plus, Mic, ArrowUp, ChevronDown, MoreVertical, LogOut, Trash2
+  Plus, Mic, ArrowUp, ChevronDown, MoreVertical, LogOut, Trash2, Camera, ImageIcon, X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { saveChat, saveMessage, getUserChats, getChatMessages, deleteChat, saveMemory, getUserMemory } from '../services/supabase';
@@ -22,6 +22,71 @@ export default function ChatPage() {
   const [userScrolled, setUserScrolled] = useState(false);
   const [savedChats, setSavedChats] = useState([]);
   const [userMemory, setUserMemory] = useState([]);
+
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [attachedFile, setAttachedFile] = useState(null);
+  const [attachedPreview, setAttachedPreview] = useState(null);
+  const [isListening, setIsListening] = useState(false);
+  const cameraRef = useRef(null);
+  const galleryRef = useRef(null);
+
+  const openCamera = () => {
+    cameraRef.current.click();
+    setShowAttachMenu(false);
+  };
+  const openGallery = () => {
+    galleryRef.current.click();
+    setShowAttachMenu(false);
+  };
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    setAttachedFile(file);
+    if(file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (ev) => 
+        setAttachedPreview(ev.target.result);
+      reader.readAsDataURL(file);
+    } else {
+      setAttachedPreview(null);
+    }
+  };
+
+  const startVoiceInput = () => {
+    if(!('webkitSpeechRecognition' in window) && 
+       !('SpeechRecognition' in window)) {
+      alert('Voice input not supported in this browser');
+      return;
+    }
+    
+    const SpeechRecognition = 
+      window.SpeechRecognition || 
+      window.webkitSpeechRecognition;
+    
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'hi-IN'; // Hindi + English
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    
+    setIsListening(true);
+    
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map(result => result[0].transcript)
+        .join('');
+      setInputValue(transcript);
+    };
+    
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+    
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+    
+    recognition.start();
+  };
 
   useEffect(() => {
     if (user) {
@@ -497,12 +562,16 @@ These tags will be hidden from user display.${memoryText}`
   };
 
   const handleSend = async (textToUse) => {
-    const text = typeof textToUse === 'string' ? textToUse.trim() : inputValue.trim();
+    let text = typeof textToUse === 'string' ? textToUse.trim() : inputValue.trim();
     
     // GUARD: Synchronous lock prevents any duplicate calls
-    if (!text || isLoadingRef.current) {
+    if ((!text && !attachedFile) || isLoadingRef.current) {
       console.log('[DoraLink] handleSend blocked - empty or already loading');
       return;
+    }
+
+    if (attachedFile) {
+        text = text + "\n[Image attached: " + attachedFile.name + "]";
     }
 
     // Lock immediately (synchronous - unlike setState)
@@ -514,9 +583,14 @@ These tags will be hidden from user display.${memoryText}`
     const userMsg = {
       id: Date.now(),
       role: 'user',
-      content: text
+      content: text,
+      attachedPreview: attachedPreview
     };
     
+    setAttachedFile(null);
+    setAttachedPreview(null);
+    setShowAttachMenu(false);
+
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
 
@@ -609,6 +683,10 @@ These tags will be hidden from user display.${memoryText}`
           from { opacity: 0; transform: scale(0.85); }
           to { opacity: 1; transform: scale(1); }
         }
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.05); opacity: 0.8; }
+        }
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-8px); }
@@ -645,6 +723,14 @@ These tags will be hidden from user display.${memoryText}`
               background: 'rgba(0,0,0,0.4)',
               zIndex: 40
             }}
+          />
+        )}
+
+        {/* ATTACH MENU OVERLAY */}
+        {showAttachMenu && (
+          <div
+            onClick={() => setShowAttachMenu(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 15 }}
           />
         )}
 
@@ -942,8 +1028,13 @@ These tags will be hidden from user display.${memoryText}`
                 {messages.map((msg) => (
                   <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', width: '100%', animation: 'fadeUp 0.3s ease forwards', willChange: 'transform' }}>
                     {msg.role === 'user' ? (
-                      <div style={{ alignSelf: 'flex-end', background: '#00A8D6', color: 'white', borderRadius: '18px 18px 4px 18px', padding: '10px 14px', maxWidth: '75%', fontFamily: "'Nunito', sans-serif", fontSize: '15px' }}>
-                        {msg.content}
+                      <div style={{ alignSelf: 'flex-end', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', maxWidth: '75%' }}>
+                        {msg.attachedPreview && (
+                            <img src={msg.attachedPreview} style={{ width: '200px', borderRadius: '12px', marginBottom: '8px', objectFit: 'cover' }} alt="attachment" />
+                        )}
+                        <div style={{ background: '#00A8D6', color: 'white', borderRadius: '18px 18px 4px 18px', padding: '10px 14px', fontFamily: "'Nunito', sans-serif", fontSize: '15px', wordBreak: 'break-word' }}>
+                          {msg.content.replace(/\n\[Image attached: .*?\]/, '')}
+                        </div>
                       </div>
                     ) : msg.role === 'typing' ? (
                       <div style={{ alignSelf: 'flex-start', display: 'flex', gap: '10px', alignItems: 'flex-start', maxWidth: '90%' }}>
@@ -1012,6 +1103,65 @@ These tags will be hidden from user display.${memoryText}`
             background:'rgba(240,249,255,0.98)',
             zIndex:20
           }}>
+            {isListening && (
+              <div style={{
+                display:'flex',
+                alignItems:'center',
+                justifyContent:'center',
+                gap:'8px',
+                marginBottom:'8px',
+                fontFamily:"'Nunito', sans-serif",
+                fontSize:'13px',
+                color:'#FF4444',
+                fontWeight:'600'
+              }}>
+                <div style={{
+                  width:'8px', height:'8px',
+                  borderRadius:'50%',
+                  background:'#FF4444',
+                  animation:'pulse 1s infinite'
+                }}/>
+                Listening...
+              </div>
+            )}
+
+            {attachedFile && (
+              <div style={{
+                margin:'0 auto 8px auto',
+                maxWidth:'768px',
+                background:'white',
+                borderRadius:'12px',
+                padding:'10px 12px',
+                display:'flex',
+                alignItems:'center',
+                gap:'10px',
+                boxShadow:'0 2px 8px rgba(0,168,214,0.1)',
+                border:'1px solid #E0F4FB'
+              }}>
+                {attachedPreview ? (
+                  <img src={attachedPreview} 
+                    style={{width:'40px', height:'40px',
+                    borderRadius:'8px', objectFit:'cover'}}/>
+                ) : (
+                  <FileText size={20} color="#00A8D6" />
+                )}
+                <span style={{
+                  flex:1, fontSize:'13px',
+                  fontFamily:"'Nunito', sans-serif",
+                  color:'#1a1a1a', fontWeight:'600',
+                  overflow:'hidden', textOverflow:'ellipsis',
+                  whiteSpace:'nowrap'
+                }}>{attachedFile?.name}</span>
+                <button onClick={() => {
+                  setAttachedFile(null)
+                  setAttachedPreview(null)
+                }} style={{background:'none', border:'none',
+                  cursor:'pointer', color:'#9ca3af'}}>
+                  <X size={16} />
+                </button>
+              </div>
+            )}
+
             <div style={{
               display:'flex',
               alignItems:'center',
@@ -1022,18 +1172,72 @@ These tags will be hidden from user display.${memoryText}`
               border:'1.5px solid rgba(0,168,214,0.2)',
               gap:'8px',
               maxWidth:'768px',
-              margin:'0 auto'
+              margin:'0 auto',
+              position: 'relative'
             }}>
+              {showAttachMenu && (
+                <div style={{
+                  position:'absolute',
+                  bottom:'60px',
+                  left:'0px',
+                  background:'white',
+                  borderRadius:'16px',
+                  boxShadow:'0 4px 20px rgba(0,168,214,0.2)',
+                  border:'1px solid #E0F4FB',
+                  overflow:'hidden',
+                  zIndex:30
+                }}>
+                  <button onClick={openCamera} style={{
+                    display:'flex', alignItems:'center',
+                    gap:'10px', padding:'14px 20px',
+                    width:'100%', border:'none',
+                    background:'none', cursor:'pointer',
+                    fontFamily:"'Nunito', sans-serif",
+                    fontSize:'14px', fontWeight:'600',
+                    color:'#1a1a1a'
+                  }}>
+                    <Camera size={18} color="#00A8D6" />
+                    Camera
+                  </button>
+                  <div style={{height:'1px', background:'#F0F9FF'}}/>
+                  <button onClick={openGallery} style={{
+                    display:'flex', alignItems:'center',
+                    gap:'10px', padding:'14px 20px',
+                    width:'100%', border:'none',
+                    background:'none', cursor:'pointer',
+                    fontFamily:"'Nunito', sans-serif",
+                    fontSize:'14px', fontWeight:'600',
+                    color:'#1a1a1a'
+                  }}>
+                    <ImageIcon size={18} color="#00A8D6" />
+                    Gallery
+                  </button>
+                </div>
+              )}
+
               {/* Plus button */}
-              <button style={{
-                width:'30px', height:'30px',
-                background:'none', border:'none',
-                cursor:'pointer', flexShrink:0,
-                display:'flex', alignItems:'center',
-                justifyContent:'center'
-              }}>
-                <Plus size={20} color="#9ca3af" />
+              <button 
+                onClick={() => setShowAttachMenu(!showAttachMenu)}
+                style={{
+                  width:'30px', height:'30px',
+                  background:'none', border:'none',
+                  cursor:'pointer', flexShrink:0,
+                  display:'flex', alignItems:'center',
+                  justifyContent:'center',
+                  transition: 'transform 0.2s'
+                }}>
+                <Plus size={20} color="#9ca3af" style={{ transform: showAttachMenu ? 'rotate(45deg)' : 'none' }} />
               </button>
+
+              <input ref={cameraRef} type="file" 
+                accept="image/*" capture="environment"
+                style={{display:'none'}}
+                onChange={handleFileSelect} />
+              
+              <input ref={galleryRef} type="file"
+                accept="image/*,application/pdf,.doc,.docx"
+                style={{display:'none'}}
+                onChange={handleFileSelect} />
 
               {/* Input */}
               <input
@@ -1071,7 +1275,7 @@ These tags will be hidden from user display.${memoryText}`
                     borderRadius:'2px'
                   }}/>
                 </button>
-              ) : inputValue.trim() ? (
+              ) : (inputValue.trim() || attachedFile) ? (
                 // User typing = SEND button
                 <button
                   onClick={() => handleSend(inputValue)}
@@ -1087,9 +1291,24 @@ These tags will be hidden from user display.${memoryText}`
                   }}>
                   <ArrowUp size={18} color="white" />
                 </button>
+              ) : isListening ? (
+                // LISTENING state - pulsing red mic
+                <button onClick={() => setIsListening(false)}
+                  style={{
+                    width:'38px', height:'38px',
+                    borderRadius:'50%',
+                    background:'#FF4444',
+                    border:'none', cursor:'pointer',
+                    display:'flex', alignItems:'center',
+                    justifyContent:'center',
+                    flexShrink:0,
+                    animation:'pulse 1s ease-in-out infinite'
+                  }}>
+                  <Mic size={18} color="white" />
+                </button>
               ) : (
                 // Default = MIC button
-                <button style={{
+                <button onClick={startVoiceInput} style={{
                   width:'38px', height:'38px',
                   borderRadius:'50%',
                   background:'#E0F4FB',
