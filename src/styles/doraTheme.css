@@ -1,0 +1,22 @@
+:root {
+  /* Doraemon Theme Colors */
+  --color-primary: #00A8D6; /* Doraemon Blue */
+  --color-secondary: #FF0000; /* Red Accent (Collar/Nose) */
+  --color-background-light: #F0F9FF; /* Very light blue */
+  --color-background-dark: #0A192F; /* Deep midnight blue */
+
+  /* Text Colors */
+  --color-text-main: #1E293B;
+  --color-text-muted: #64748B;
+  --color-text-dark: #F1F5F9;
+
+  /* Font */
+  --font-nunito: "Nunito", sans-serif;
+
+  /* Theme Mapping */
+  --primary: var(--color-primary);
+  --secondary: var(--color-secondary);
+  --background: #FFFFFF;
+  --foreground: var(--color-text-main);
+  --font-family: var(--font-nunito);
+}
