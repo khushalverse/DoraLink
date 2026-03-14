@@ -76,23 +76,31 @@ export default function ChatPage() {
     }
   };
 
-  const startVoiceInput = () => {
+  const startVoiceInput = async () => {
+    try {
+      await navigator.mediaDevices.getUserMedia(
+        { audio: true }
+      )
+    } catch(err) {
+      alert('Mic permission do! Settings mein jaake allow karo.')
+      return
+    }
+
     const SpeechRecognition = 
       window.SpeechRecognition || 
       window.webkitSpeechRecognition
-    
+      
     if(!SpeechRecognition) {
-      alert('Use Chrome browser for voice input')
+      alert('Chrome browser use karo voice ke liye!')
       return
     }
-    
+
     const recognition = new SpeechRecognition()
     recognition.lang = 'en-US'
-    recognition.continuous = true
+    recognition.continuous = false
     recognition.interimResults = true
-    
     setIsListening(true)
-    
+
     recognition.onresult = (event) => {
       let transcript = ''
       for(let i = 0; i < event.results.length; i++) {
@@ -102,19 +110,20 @@ export default function ChatPage() {
       recognition.stop()
       setIsListening(false)
     }
-    
-    recognition.start()
-    
-    // Minimum 3 seconds then auto stop
-    setTimeout(() => {
-      recognition.stop()
+
+    recognition.onend = () => {
       setIsListening(false)
-    }, 3000)
-    
+    }
+
     recognition.onerror = (e) => {
       console.log('Voice error:', e.error)
       setIsListening(false)
+      if(e.error === 'not-allowed') {
+        alert('Mic permission denied! Phone settings mein allow karo.')
+      }
     }
+
+    recognition.start()
   };
 
   useEffect(() => {
@@ -1315,7 +1324,7 @@ export default function ChatPage() {
                       width: '38px',
                       height: '38px',
                       borderRadius: '50%',
-                      background: (inputValue.trim() || attachedFile)
+                      background: inputValue.trim()
                         ? '#00A8D6'
                         : '#E0F4FB',
                       border: 'none',
@@ -1329,7 +1338,7 @@ export default function ChatPage() {
                   >
                     <ArrowUp
                       size={18}
-                      color={(inputValue.trim() || attachedFile) ? "white" : "#00A8D6"}
+                      color={inputValue.trim() ? "white" : "#00A8D6"}
                     />
                   </button>
                 )}
