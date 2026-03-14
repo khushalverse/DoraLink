@@ -77,21 +77,34 @@ export default function ChatPage() {
     }
   };
 
-  const startVoiceInput = async () => {
-    try {
-      await navigator.mediaDevices
-        .getUserMedia({ audio: true })
-    } catch(err) {
-      setShowMicPermission(true)
+  const startVoiceInput = () => {
+    // Check if Android native speech available
+    if(window.AndroidSpeech) {
+      setIsListening(true)
+      
+      // Android will call these functions
+      window.onSpeechResult = (text) => {
+        setInputValue(text)
+        setIsListening(false)
+      }
+      
+      window.onSpeechError = (error) => {
+        console.log('Speech error:', error)
+        setIsListening(false)
+      }
+      
+      // Start Android native speech
+      window.AndroidSpeech.startListening()
       return
     }
 
+    // Fallback for web browser
     const SpeechRecognition =
       window.SpeechRecognition ||
       window.webkitSpeechRecognition
 
     if(!SpeechRecognition) {
-      alert('Voice Chrome mein kaam karta hai!')
+      alert('Voice input not supported!')
       return
     }
 
@@ -105,18 +118,16 @@ export default function ChatPage() {
     recognition.onresult = (event) => {
       let finalTranscript = ''
       let interimTranscript = ''
-      
-      for(let i = event.resultIndex; 
+      for(let i = event.resultIndex;
           i < event.results.length; i++) {
         if(event.results[i].isFinal) {
-          finalTranscript += 
+          finalTranscript +=
             event.results[i][0].transcript
         } else {
-          interimTranscript += 
+          interimTranscript +=
             event.results[i][0].transcript
         }
       }
-      
       if(finalTranscript) {
         setInputValue(finalTranscript)
         setIsListening(false)
@@ -126,23 +137,12 @@ export default function ChatPage() {
       }
     }
 
-    recognition.onend = () => {
-      setIsListening(false)
-    }
-
-    recognition.onerror = (e) => {
-      console.log('Voice error:', e.error)
-      setIsListening(false)
-    }
-
-    recognition.onnomatch = () => {
-      setIsListening(false)
-    }
+    recognition.onend = () => setIsListening(false)
+    recognition.onerror = () => setIsListening(false)
 
     try {
       recognition.start()
     } catch(err) {
-      console.log('Recognition start error:', err)
       setIsListening(false)
     }
   };
