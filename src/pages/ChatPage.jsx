@@ -1033,8 +1033,10 @@ export default function ChatPage() {
               <div style={{
                 position: 'fixed',
                 bottom: '90px',
-                left: '50%',
-                transform: 'translateX(-50%)',
+                left: '0',
+                right: '0',
+                margin: '0 auto',
+                width: 'fit-content',
                 background: 'white',
                 borderRadius: '50px',
                 padding: '12px 24px',
