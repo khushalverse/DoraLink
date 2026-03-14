@@ -141,59 +141,72 @@ export default function HabitPage() {
   };
 
   const calculateStreak = (dates) => {
-    if (!dates || dates.length === 0) return 0;
-    const sortedDates = [...dates].sort().reverse();
-    let streak = 0;
-    let check = new Date();
-    check.setHours(0,0,0,0);
+    if(!dates || dates.length === 0) return 0
+    let streak = 0
+    let check = new Date()
+    check.setHours(0, 0, 0, 0)
     
-    // Convert current check date to string format for comparison
-    while (true) {
-        check.setMinutes(check.getMinutes() - check.getTimezoneOffset());
-        const checkStr = check.toISOString().split('T')[0];
-        
-        if (sortedDates.includes(checkStr)) {
-            streak++;
-            check.setDate(check.getDate() - 1); // Move to previous day
-        } else {
-            // Only break if it's missing today and missing yesterday. If missing today but yesterday was completed, it's a current ongoing streak.
-            const todayDate = new Date();
-            todayDate.setMinutes(todayDate.getMinutes() - todayDate.getTimezoneOffset());
-            const todayStr = todayDate.toISOString().split('T')[0];
-            
-            if (checkStr === todayStr) {
-                 check.setDate(check.getDate() - 1);
-            } else {
-                 break;
-            }
-        }
+    while(true) {
+      const checkStr = check.toDateString()
+      const found = dates.some(d => 
+        new Date(d).toDateString() === checkStr
+      )
+      if(found) {
+        streak++
+        check.setDate(check.getDate() - 1)
+      } else {
+        break
+      }
     }
-    return streak;
-  };
+    return streak
+  }
+
+  const isCompletedToday = (habit) => {
+    if(!habit.completedDates) return false;
+    const today = new Date().toDateString()
+    return habit.completedDates.some(d => 
+      new Date(d).toDateString() === today
+    )
+  }
 
   const toggleComplete = (id) => {
     const today = new Date().toDateString()
     setHabits(prev => {
       const updated = prev.map(h => {
         if(h.id !== id || h.isPaused) return h
-        const done = h.completedDates.includes(today)
-        const newDates = done
-          ? h.completedDates.filter(d => d !== today)
-          : [...h.completedDates, today]
-        const streak = calculateStreak(newDates)
         
+        const done = h.completedDates
+          .map(d => new Date(d).toDateString())
+          .includes(today)
+        
+        const newDates = done
+          ? h.completedDates.filter(d => 
+              new Date(d).toDateString() !== today
+            )
+          : [...h.completedDates, new Date().toISOString()]
+        
+        const streak = calculateStreak(newDates)
+
         // XP logic
         if(!done) {
           let earnedXp = 20
           let xpMsg = "+20 XP 🌟"
-          if(streak === 7) { earnedXp += 50; xpMsg = "+70 XP 🔥 7-Day Streak!" }
-          if(streak === 30) { earnedXp += 200; xpMsg = "+220 XP 👑 30-Day!" }
+          if(streak === 7) { 
+            earnedXp += 50
+            xpMsg = "+70 XP 🔥 7-Day Streak!" 
+          }
+          if(streak === 30) { 
+            earnedXp += 200
+            xpMsg = "+220 XP 👑 30-Day!" 
+          }
           const newXp = xp + earnedXp
           setXp(newXp)
           localStorage.setItem('doralink_xp', newXp.toString())
           setXpPopup(xpMsg)
           setTimeout(() => setXpPopup(null), 1500)
-          const quote = QUOTES[Math.floor(Math.random() * QUOTES.length)]
+          const quote = QUOTES[
+            Math.floor(Math.random() * QUOTES.length)
+          ]
           setCelebration({ emoji: h.emoji, quote })
           setTimeout(() => setCelebration(null), 1500)
         }
@@ -203,8 +216,8 @@ export default function HabitPage() {
           completedDates: newDates,
           streak,
           bestStreak: Math.max(h.bestStreak, streak),
-          totalCompletions: done 
-            ? h.totalCompletions - 1 
+          totalCompletions: done
+            ? h.totalCompletions - 1
             : h.totalCompletions + 1
         }
 
@@ -390,12 +403,11 @@ export default function HabitPage() {
       "Your habits called. They said they miss you 😢"
   ];
   
-  const showRoastCard = roastMode && !hideRoastToday && habits.length > 0 && habits.filter(h => h.completedDates?.includes(getTodayStr())).length === 0 && new Date().getHours() >= 12;
+  const showRoastCard = roastMode && !hideRoastToday && habits.length > 0 && habits.filter(h => isCompletedToday(h)).length === 0 && new Date().getHours() >= 12;
   const currentRoast = React.useMemo(() => roasts[Math.floor(Math.random() * roasts.length)], [showRoastCard]);
 
-  // Stats
   const totalHabits = habits.length;
-  const completedToday = habits.filter(h => h.completedDates?.includes(getTodayStr())).length;
+  const completedToday = habits.filter(h => isCompletedToday(h)).length;
   const bestStreakAll = habits.length > 0 ? Math.max(...habits.map(h => h.bestStreak || 0)) : 0;
   const completionRate = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0;
 
@@ -410,79 +422,95 @@ export default function HabitPage() {
   });
 
   // Week Progress Chart Logic
-  const getWeekDates = () => {
-    const dates = [];
-    for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-        dates.push(d.toISOString().split('T')[0]);
-    }
-    return dates;
-  };
-  
-  const getDayName = (dateStr) => {
-    const d = new Date(dateStr);
-    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()];
-  };
-  const weekDates = getWeekDates();
-  const formatDatesCompletion = weekDates.map(dateStr => {
-    if (habits.length === 0) return { day: getDayName(dateStr).charAt(0), percent: 0, isToday: dateStr === getTodayStr(), fullDayInfo: getDayName(dateStr) };
-    const completedThatDay = habits.filter(h => !h.isPaused && h.completedDates && h.completedDates.includes(dateStr)).length;
-    const activeHabits = habits.filter(h => !h.isPaused).length;
-    return {
-        day: getDayName(dateStr).charAt(0),
-        fullDayInfo: getDayName(dateStr),
-        percent: activeHabits > 0 ? Math.round((completedThatDay / activeHabits) * 100) : 0,
-        isToday: dateStr === getTodayStr()
-    };
-  });
+  const getWeekData = () => {
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+    const today = new Date()
+    
+    return days.map((day, index) => {
+      const date = new Date(today)
+      // Get date for each day of current week
+      const currentDay = today.getDay()
+      const diff = index - currentDay
+      date.setDate(today.getDate() + diff)
+      date.setHours(0, 0, 0, 0)
+      const dateStr = date.toDateString()
+      
+      const activeHabits = habits.filter(h => !h.isPaused)
+      if(activeHabits.length === 0) return { day, pct: 0, isToday: index === currentDay, isFuture: date > today, date }
+      
+      const completed = activeHabits.filter(h =>
+        h.completedDates.some(d =>
+          new Date(d).toDateString() === dateStr
+        )
+      ).length
+      
+      const pct = Math.round(
+        (completed / activeHabits.length) * 100
+      )
+      
+      return { 
+        day, 
+        pct, 
+        isToday: index === currentDay,
+        isFuture: date > today,
+        date
+      }
+    })
+  }
+
+  const weekData = getWeekData();
 
   // Month Contribution Logic
-  const getMonthDates = () => {
-    const today = new Date();
-    today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
-    const year = today.getFullYear();
-    const month = today.getMonth();
-    const startDate = new Date(year, month, 1);
-    const firstDayIndex = startDate.getDay(); // 0(Sun) - 6(Sat)
+  const getMonthData = () => {
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = today.getMonth()
     
-    // Push empty slots for days before 1st of month
-    const grid = Array(firstDayIndex).fill(null);
+    // First day of month
+    const firstDay = new Date(year, month, 1)
+    // Last day of month  
+    const lastDay = new Date(year, month + 1, 0)
     
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    for (let i = 1; i <= daysInMonth; i++) {
-        const dateObj = new Date(year, month, i);
-        dateObj.setMinutes(dateObj.getMinutes() - dateObj.getTimezoneOffset());
-        grid.push(dateObj.toISOString().split('T')[0]);
+    const days = []
+    
+    // Empty cells before first day
+    for(let i = 0; i < firstDay.getDay(); i++) {
+      days.push(null)
     }
-    return grid;
-  };
-  const monthGrid = getMonthDates();
-
-  const getDayCompletionStyle = (dateStr) => {
-      if (!dateStr) return { backgroundColor: 'transparent' };
-      if (habits.length === 0) return { backgroundColor: '#EBEDF0' };
-      const completedThatDay = habits.filter(h => !h.isPaused && h.completedDates && h.completedDates.includes(dateStr)).length;
-      const activeHabits = habits.filter(h => !h.isPaused).length;
-      const pct = activeHabits > 0 ? (completedThatDay / activeHabits) * 100 : 0;
+    
+    // All days of month
+    for(let d = 1; d <= lastDay.getDate(); d++) {
+      const date = new Date(year, month, d)
+      const dateStr = date.toDateString()
+      const isToday = date.toDateString() === today.toDateString()
+      const isFuture = date > today
       
-      let baseStyle = { backgroundColor: '#EBEDF0' };
-      if (pct > 0 && pct < 50) baseStyle.backgroundColor = '#B8E4F5';
-      else if (pct >= 50 && pct < 100) baseStyle.backgroundColor = '#00A8D6';
-      else if (pct === 100) baseStyle.backgroundColor = '#0078B8';
+      const activeHabits = habits.filter(h => !h.isPaused)
       
-      if (dateStr === getTodayStr()) {
-          baseStyle.border = '2px solid #FF6B35';
+      let pct = 0
+      if(!isFuture && activeHabits.length > 0) {
+        const completed = activeHabits.filter(h =>
+          h.completedDates.some(dd =>
+            new Date(dd).toDateString() === dateStr
+          )
+        ).length
+        pct = Math.round(
+          (completed / activeHabits.length) * 100
+        )
       }
-      return baseStyle;
-  };
-
-  const getDayHoverText = (dateStr) => {
-      if(!dateStr) return '';
-      const completedThatDay = habits.filter(h => !h.isPaused && h.completedDates && h.completedDates.includes(dateStr)).length;
-      return `${completedThatDay} habits done`;
-  };
+      
+      const completedCount = activeHabits.length > 0 ? activeHabits.filter(h =>
+        h.completedDates.some(dd =>
+          new Date(dd).toDateString() === dateStr
+        )
+      ).length : 0;
+      
+      days.push({ date: d, pct, isToday, isFuture, fullDate: date, completedCount })
+    }
+    
+    return days
+  }
+  const monthData = getMonthData();
 
   const currentLvl = getCurrentLevel(xp);
   const nextLvl = getNextLevel(xp);
@@ -498,7 +526,11 @@ export default function HabitPage() {
     let totalPct = 0;
     habs.forEach(h => {
         let hDone = 0;
-        weekDates.forEach(d => { if(h.completedDates?.includes(d)) hDone++; });
+        weekData.forEach(wd => { 
+          if(h.completedDates?.some(d => new Date(d).toDateString() === wd.date.toDateString())) {
+            hDone++; 
+          }
+        });
         totalPct += (hDone / 7) * 100;
     });
     return Math.round(totalPct / habs.length);
@@ -822,7 +854,7 @@ export default function HabitPage() {
                     ) : (
                         <div className="space-y-2.5">
                             {filteredHabits.map((habit, idx) => {
-                                const checked = habit.completedDates?.includes(getTodayStr());
+                                const checked = isCompletedToday(habit);
                                 return (
                                 <div key={habit.id} 
                                    className="bg-white rounded-[16px] p-[14px_16px] shadow-[0_2px_8px_rgba(0,168,214,0.08)] mb-[10px] transform hover:scale-[1.01] transition-transform duration-200 relative overflow-hidden"
@@ -890,23 +922,21 @@ export default function HabitPage() {
 
                                    {/* Progress Dots Mon-Sun */}
                                    <div className="mt-4 flex items-center justify-between px-1">
-                                       {weekDates.map((dateStr, i) => {
-                                           const isDone = habit.completedDates?.includes(dateStr);
-                                           const isTday = dateStr === getTodayStr();
-                                           const isFuture = new Date(dateStr) > new Date();
+                                       {weekData.map((wd, i) => {
+                                           const isDone = habit.completedDates?.some(d => new Date(d).toDateString() === wd.date.toDateString());
                                            
                                            let dotColor = '#E5E7EB'; // missed
                                            if (isDone) dotColor = '#00A8D6';
-                                           else if (isFuture) dotColor = '#F3F4F6';
+                                           else if (wd.isFuture) dotColor = '#F3F4F6';
                                            
                                            return (
                                                <div key={i} className="flex flex-col items-center gap-[4px]">
                                                    <div style={{
                                                        width:'8px', height:'8px', borderRadius:'50%',
                                                        backgroundColor: dotColor,
-                                                       border: isTday && !isDone ? `1.5px solid #00A8D6` : 'none',
+                                                       border: wd.isToday && !isDone ? `1.5px solid #00A8D6` : 'none',
                                                    }} />
-                                                   <span className="text-[9px] uppercase text-[#9ca3af]">{getDayName(dateStr).charAt(0)}</span>
+                                                   <span className="text-[9px] uppercase text-[#9ca3af]">{wd.day[0]}</span>
                                                </div>
                                            )
                                        })}
@@ -1049,21 +1079,22 @@ export default function HabitPage() {
                         <div>
                             <h3 className="text-[16px] font-bold text-[#1a1a1a] mb-[16px]">Weekly Progress</h3>
                             <div className="flex items-end h-[100px] gap-[4px] px-1">
-                                {formatDatesCompletion.map((curDay, i) => (
+                                {weekData.map((curDay, i) => (
                                     <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
-                                        <span className="text-[10px] text-[#9ca3af] mb-1">{curDay.percent}%</span>
+                                        <span className="text-[10px] text-[#9ca3af] mb-1">{curDay.pct}%</span>
                                         <div className="w-full rounded-t-[6px] transition-all duration-500" 
                                             style={{ 
-                                                height: `${Math.max(4, curDay.percent)}%`, 
-                                                backgroundColor: curDay.isToday ? '#00A8D6' : (curDay.percent > 0 ? '#B8E4F5' : '#F3F4F6'),
-                                                minHeight: '4px'
+                                                height: `${Math.max(curDay.pct, 4)}%`, 
+                                                backgroundColor: curDay.isToday ? '#00A8D6' : (curDay.pct > 0 ? '#B8E4F5' : '#F3F4F6'),
+                                                minHeight: '4px',
+                                                opacity: curDay.isFuture ? 0.3 : 1
                                             }} />
                                     </div>
                                 ))}
                             </div>
                             <div className="flex justify-between w-full mt-2 px-1 gap-[4px]">
-                                {formatDatesCompletion.map((curDay, i) => (
-                                    <span key={i} className="flex-1 text-center text-[12px] pt-[4px]" style={{ color: curDay.isToday ? '#00A8D6' : '#9ca3af', fontWeight: curDay.isToday ? 'bold' : 'normal' }}>{curDay.fullDayInfo.substring(0,3)}</span>
+                                {weekData.map((curDay, i) => (
+                                    <span key={i} className="flex-1 text-center text-[12px] pt-[4px]" style={{ color: curDay.isToday ? '#00A8D6' : '#9ca3af', fontWeight: curDay.isToday ? 'bold' : 'normal' }}>{curDay.day}</span>
                                 ))}
                             </div>
                         </div>
@@ -1074,17 +1105,28 @@ export default function HabitPage() {
                                 {["S", "M", "T", "W", "T", "F", "S"].map((d,i) => (
                                     <div key={i} className="text-[12px] text-[#9ca3af] text-center mb-1">{d}</div>
                                 ))}
-                                {monthGrid.map((dateStr, i) => (
-                                    <div key={i} className="w-[28px] h-[28px] rounded-[4px] m-[2px] relative group mx-auto"
-                                        style={getDayCompletionStyle(dateStr)}>
-                                        {/* Tooltip */}
-                                        {dateStr && (
+                                {monthData.map((mDay, i) => {
+                                    if(!mDay) return <div key={i} className="w-[28px] h-[28px] m-[2px]" />;
+                                    
+                                    let bg = '#EBEDF0';
+                                    if(mDay.isFuture) bg = '#F3F4F6';
+                                    else if(mDay.pct === 0) bg = '#EBEDF0';
+                                    else if(mDay.pct < 50) bg = '#B8E4F5';
+                                    else if(mDay.pct < 100) bg = '#00A8D6';
+                                    else if(mDay.pct === 100) bg = '#0078B8';
+                                    
+                                    return (
+                                        <div key={i} className="w-[28px] h-[28px] rounded-[4px] m-[2px] relative group mx-auto"
+                                            style={{
+                                                backgroundColor: bg,
+                                                border: mDay.isToday ? '2px solid #FF6B35' : 'none'
+                                            }}>
                                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-lg">
-                                                {getDayHoverText(dateStr)}
+                                                {mDay.completedCount} habits done
                                             </div>
-                                        )}
-                                    </div>
-                                ))}
+                                        </div>
+                                    )
+                                })}
                              </div>
                         </div>
                     )}
