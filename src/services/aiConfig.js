@@ -9,7 +9,7 @@ export const AI_PROVIDERS = {
     apiKeyEnv: 'VITE_GEMINI_API_KEY',
     models: {
       primary: {
-        id: 'gemini-2.5-flash-lite-preview-06-17',
+        id: 'gemini-3.1-flash-lite-preview',
         name: 'Gemini 2.5 Flash Lite',
         description: 'Fast, 500 req/day free',
         maxTokens: 800
