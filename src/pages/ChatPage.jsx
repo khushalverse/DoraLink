@@ -79,35 +79,37 @@ export default function ChatPage() {
 
   const startVoiceInput = async () => {
     try {
-      await navigator.mediaDevices.getUserMedia(
-        { audio: true }
-      )
+      await navigator.mediaDevices
+        .getUserMedia({ audio: true })
     } catch(err) {
       setShowMicPermission(true)
       return
     }
 
-    const SpeechRecognition = 
-      window.SpeechRecognition || 
+    const SpeechRecognition =
+      window.SpeechRecognition ||
       window.webkitSpeechRecognition
-      
+
     if(!SpeechRecognition) {
-      alert('Chrome browser use karo voice ke liye!')
+      alert('Voice Chrome mein kaam karta hai!')
       return
     }
 
     const recognition = new SpeechRecognition()
     recognition.lang = 'en-US'
     recognition.continuous = false
-    recognition.interimResults = true
+    recognition.interimResults = false
+    
     setIsListening(true)
 
     recognition.onresult = (event) => {
-      let transcript = ''
-      for(let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript
-      }
+      const transcript = 
+        event.results[0][0].transcript
       setInputValue(transcript)
+      setIsListening(false)
+    }
+
+    recognition.onspeechend = () => {
       recognition.stop()
       setIsListening(false)
     }
@@ -119,12 +121,13 @@ export default function ChatPage() {
     recognition.onerror = (e) => {
       console.log('Voice error:', e.error)
       setIsListening(false)
-      if(e.error === 'not-allowed') {
-        alert('Mic permission denied! Phone settings mein allow karo.')
-      }
     }
 
-    recognition.start()
+    try {
+      recognition.start()
+    } catch(err) {
+      setIsListening(false)
+    }
   };
 
   useEffect(() => {
