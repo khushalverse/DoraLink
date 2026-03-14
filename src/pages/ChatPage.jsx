@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { callAI } from '../services/aiService';
 import { useNavigate } from 'react-router-dom';
 import {
   Menu, SquarePen, BarChart2, Wrench, Search,
@@ -172,14 +173,7 @@ export default function ChatPage() {
     }
   }, [messages, userScrolled]);
 
-  const sendToGemini = async (userMessage) => {
-    const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-
-    const url =
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
-
-    abortControllerRef.current = new AbortController();
-
+  const buildSystemPrompt = () => {
     const memoryText = userMemory.length > 0
       ? '\n\nUSER MEMORY:\n' + 
         userMemory.map(m => 
@@ -187,10 +181,7 @@ export default function ChatPage() {
         ).join('\n')
       : '';
 
-    const requestBody = {
-      system_instruction: {
-        parts: [{
-          text: `━━━━━━━━━━━━━━━━━━━━━━━━
+    return `━━━━━━━━━━━━━━━━━━━━━━━━
 👤 CREATOR & USER INFO
 ━━━━━━━━━━━━━━━━━━━━━━━━
 Your Creator: Khushal Prajapat
@@ -461,8 +452,7 @@ Keep Hinglish throughout response.
 Example: "I know that feeling" → "yaar samajh sakta hun ye feeling"
 
 5. SHORTER CASUAL REPLIES:
-For simple casual messages:
-MAX 3-4 lines
+Max 3-4 lines
 No need to over-explain
 Keep it punchy and fun
 
@@ -492,46 +482,15 @@ Examples:
 [MEMORY:exam=JEE]
 [MEMORY:name=Khushal]
 [MEMORY:weak_subject=Physics]
-These tags will be hidden from user display.${memoryText}`
-        }]
-      },
-      contents: [
-        {
-          role: "user",
-          parts: [
-            { text: userMessage }
-          ]
-        }
-      ],
-      generationConfig: {
-        maxOutputTokens: 800,
-        temperature: 0.9,
-      }
-    };
+These tags will be hidden from user display.${memoryText}`;
+  };
 
-    console.log("Gemini request sent");
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      signal: abortControllerRef.current.signal,
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Gemini API Error:", errorText);
-      throw new Error("Gemini API request failed");
-    }
-
-    const data = await response.json();
-    console.log("Gemini response:", data);
-
-    return (
-      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "AI response empty"
+  const sendToGemini = async (userMessage, history) => {
+    return await callAI(
+      userMessage,
+      buildSystemPrompt(),
+      history,
+      800
     );
   };
 

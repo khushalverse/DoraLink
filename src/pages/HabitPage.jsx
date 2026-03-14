@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { callAI } from '../services/aiService';
 import { ArrowLeft, Plus, Trash2, PauseCircle, PlayCircle, Check, X, ChevronDown, StickyNote, Target } from 'lucide-react';
 
 export default function HabitPage() {
@@ -259,8 +260,6 @@ export default function HabitPage() {
   // AI Utilities
   const getCoachAdvice = async (type) => {
       setCoachLoading(true);
-      const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
       
       const todayStr = getTodayStr();
       const completedTdy = habits.filter(h => h.completedDates?.includes(todayStr)).length;
@@ -305,16 +304,12 @@ export default function HabitPage() {
       };
       
       try {
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: prompts[type] }] }],
-            generationConfig: { temperature: 0.8, maxOutputTokens: 200 }
-          })
-        });
-        const data = await response.json();
-        const msg = data.candidates?.[0]?.content?.parts?.[0]?.text || "Kuch gadbad ho gayi! Try again 😅";
+        const msg = await callAI(
+          prompts[type], 
+          '', 
+          [], 
+          200
+        );
         setCoachMessage(msg);
       } catch(err) {
         setCoachMessage("Network issue! Thoda wait karo 😅");
