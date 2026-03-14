@@ -95,23 +95,35 @@ export default function ChatPage() {
       return
     }
 
+    setIsListening(true)
     const recognition = new SpeechRecognition()
     recognition.lang = 'en-US'
     recognition.continuous = false
-    recognition.interimResults = false
-    
-    setIsListening(true)
+    recognition.interimResults = true
+    recognition.maxAlternatives = 1
 
     recognition.onresult = (event) => {
-      const transcript = 
-        event.results[0][0].transcript
-      setInputValue(transcript)
-      setIsListening(false)
-    }
-
-    recognition.onspeechend = () => {
-      recognition.stop()
-      setIsListening(false)
+      let finalTranscript = ''
+      let interimTranscript = ''
+      
+      for(let i = event.resultIndex; 
+          i < event.results.length; i++) {
+        if(event.results[i].isFinal) {
+          finalTranscript += 
+            event.results[i][0].transcript
+        } else {
+          interimTranscript += 
+            event.results[i][0].transcript
+        }
+      }
+      
+      if(finalTranscript) {
+        setInputValue(finalTranscript)
+        setIsListening(false)
+        recognition.stop()
+      } else if(interimTranscript) {
+        setInputValue(interimTranscript)
+      }
     }
 
     recognition.onend = () => {
@@ -123,9 +135,14 @@ export default function ChatPage() {
       setIsListening(false)
     }
 
+    recognition.onnomatch = () => {
+      setIsListening(false)
+    }
+
     try {
       recognition.start()
     } catch(err) {
+      console.log('Recognition start error:', err)
       setIsListening(false)
     }
   };
