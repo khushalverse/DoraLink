@@ -2,10 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Menu, SquarePen, BarChart2, Wrench, Search,
   RotateCcw, BookOpen, Lightbulb, PenLine, FileText,
-  Plus, Mic, ArrowUp, ChevronDown, MoreVertical
+  Plus, Mic, ArrowUp, ChevronDown, MoreVertical, LogOut
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function ChatPage() {
+  const { user, logout } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
@@ -668,9 +670,22 @@ Use this occasionally — it's your signature line!`
                 )}
               </div>
             </div>
-            <div className="mt-auto pt-4 border-t border-gray-100 flex items-center px-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#00A8D6] to-purple-500 flex items-center justify-center text-white font-bold text-sm">K</div>
-              <span className="ml-3 text-sm font-medium" style={{ fontFamily: "'Nunito', sans-serif" }}>khushalverse</span>
+            <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between px-2">
+              <div className="flex items-center overflow-hidden">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#00A8D6] to-purple-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                  {(user?.user_metadata?.full_name || user?.email || 'K')[0].toUpperCase()}
+                </div>
+                <span className="ml-3 text-sm font-medium truncate" style={{ fontFamily: "'Nunito', sans-serif" }}>
+                  {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Khushal'}
+                </span>
+              </div>
+              <button 
+                onClick={logout}
+                className="p-1.5 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
+                title="Logout"
+              >
+                <LogOut size={18} />
+              </button>
             </div>
           </div>
         </div>
