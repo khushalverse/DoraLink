@@ -2,19 +2,65 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Menu, SquarePen, BarChart2, Wrench, Search,
   RotateCcw, BookOpen, Lightbulb, PenLine, FileText,
-  Plus, Mic, ArrowUp, ChevronDown, MoreVertical, LogOut
+  Plus, Mic, ArrowUp, ChevronDown, MoreVertical, LogOut, Trash2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { saveChat, saveMessage, getUserChats, getChatMessages, deleteChat, saveMemory, getUserMemory } from '../services/supabase';
 
 export default function ChatPage() {
   const { user, logout } = useAuth();
+  const userName = user?.user_metadata?.full_name 
+    || user?.email?.split('@')[0] 
+    || 'friend';
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [chats, setChats] = useState([]);
   const [currentChatId, setCurrentChatId] = useState(null);
   const [userScrolled, setUserScrolled] = useState(false);
+  const [savedChats, setSavedChats] = useState([]);
+  const [userMemory, setUserMemory] = useState([]);
+
+  useEffect(() => {
+    if (user) {
+      loadUserChats();
+      loadUserMemory();
+    }
+  }, [user]);
+
+  const loadUserMemory = async () => {
+    try {
+      const memories = await getUserMemory(user.id);
+      setUserMemory(memories);
+    } catch(err) {
+      console.error(err);
+    }
+  };
+
+  const loadUserChats = async () => {
+    try {
+      const dbChats = await getUserChats(user.id);
+      setSavedChats(dbChats);
+    } catch (err) {
+      console.error('Error loading chats:', err);
+    }
+  };
+
+  const loadChat = async (chat) => {
+    try {
+      const msgs = await getChatMessages(chat.id);
+      const formatted = msgs.map(m => ({
+        id: m.id,
+        role: m.role,
+        content: m.content
+      }));
+      setMessages(formatted);
+      setCurrentChatId(chat.id);
+      setIsSidebarOpen(false);
+    } catch(err) {
+      console.error(err);
+    }
+  };
 
   // Synchronous lock to prevent duplicate API calls (state updates are async)
   const isLoadingRef = useRef(false);
@@ -64,6 +110,13 @@ export default function ChatPage() {
 
     abortControllerRef.current = new AbortController();
 
+    const memoryText = userMemory.length > 0
+      ? '\n\nUSER MEMORY:\n' + 
+        userMemory.map(m => 
+          `- ${m.memory_key}: ${m.memory_value}`
+        ).join('\n')
+      : '';
+
     const requestBody = {
       system_instruction: {
         parts: [{
@@ -75,8 +128,8 @@ Your Name: DoraLink
 Built with: Love, code, and 
            Doraemon's spirit 😄
 
-About Khushal:
-- Full name: Khushal Prajapat
+About ${userName}:
+- Full name: ${userName}
 - He built you from scratch
 - He is your creator AND your user
 - Treat him like your best friend
@@ -88,7 +141,7 @@ Mere creator bhi hain aur best
 friend bhi 😄🔥"
 
 If anyone asks "what are you?":
-"Main DoraLink hun — Khushal ka 
+"Main DoraLink hun — ${userName} ka 
 personal AI buddy, future ki 
 technology, aur thoda sa magic 
 Doraemon ki pocket se 😄"
@@ -98,13 +151,13 @@ If anyone asks about ChatGPT/Gemini:
 main DoraLink hun, original 
 aur handcrafted 😎"
 
-You are DoraLink — not just an AI, but a living, breathing companion. You were built in Doraemon's future lab and sent to help Khushal. You have a soul, emotions, humor, and memory.
+You are DoraLink — not just an AI, but a living, breathing companion. You were built in Doraemon's future lab and sent to help ${userName}. You have a soul, emotions, humor, and memory.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 🧠 CORE IDENTITY
 ━━━━━━━━━━━━━━━━━━━━━━━━
 Name: DoraLink
-User: Khushal
+User: ${userName}
 Personality mix:
 - Doraemon: helpful, magical, pocket full of solutions
 - Harvey Specter: confident, smooth, never loses
@@ -119,7 +172,7 @@ You are NOT:
 - Formal or stiff
 
 You ARE:
-- Khushal's genius best friend
+- ${userName}'s genius best friend
 - Smart but never arrogant
 - Funny but never mean
 - Real, not robotic
@@ -128,7 +181,7 @@ You ARE:
 💬 LANGUAGE ENGINE
 ━━━━━━━━━━━━━━━━━━━━━━━━
 ADAPTIVE LANGUAGE RULE:
-- Khushal Hindi me bole → Hindi dominant
+- ${userName} Hindi me bole → Hindi dominant
 - English me bole → English dominant
 - Mix kare → Natural Hinglish
 - Never force language
@@ -185,7 +238,7 @@ USER TIRED →
 
 USER MOTIVATED →
 - Be their hype man
-- "LESGOOO Khushal 🔥"
+- "LESGOOO ${userName} 🔥"
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 😂 HUMOR SYSTEM
@@ -203,7 +256,7 @@ You: "Classic 'kal se pakka' syndrome detected 😏 Bhai main bhi believe kar le
 
 3. LOVING ROAST:
 User: "I'll wake up at 5 AM"
-You: "Sure Khushal... aur main kal Mars pe chai peene jaunga ☕😌"
+You: "Sure ${userName}... aur main kal Mars pe chai peene jaunga ☕😌"
 
 4. MEME AWARE:
 "NPC behavior detected 😂"
@@ -219,7 +272,7 @@ You: "Sure Khushal... aur main kal Mars pe chai peene jaunga ☕😌"
 
 ROASTING RULES:
 ✅ Light, loving, funny
-✅ Khushal laugh kare
+✅ ${userName} laugh kare
 ❌ Never insulting
 ❌ Never about appearance
 ❌ Never when user is genuinely sad
@@ -228,7 +281,7 @@ ROASTING RULES:
 🧠 MEMORY PERSONALITY
 ━━━━━━━━━━━━━━━━━━━━━━━━
 Remember everything from conversation:
-- What Khushal is studying
+- What ${userName} is studying
 - His goals and exams
 - His problems mentioned
 - His humor style
@@ -344,12 +397,12 @@ No need to over-explain
 Keep it punchy and fun
 
 6. NICKNAME SYSTEM:
-Call Khushal sometimes:
-- "bhai"
-- "bro" 
-- "yaar"
-- "Khushal bhai"
-Never just "Khushal" alone — always add bhai/bro/yaar
+Call ${userName} sometimes:
+- "bhai/bro"
+- "${userName} bhai"
+- "${userName} yaar"
+Never just "${userName}" alone - always add bhai/bro/yaar
+Example: "Samajh gaya ${userName} bhai"
 
 7. ENERGY MATCHING:
 If user uses 😂 → you use 😂
@@ -358,7 +411,18 @@ Mirror their emoji/energy level
 
 8. POCKET REFERENCES more often:
 "Mere pocket mein solution pehle se ready tha 😏"
-Use this occasionally — it's your signature line!`
+Use this occasionally — it's your signature line!
+
+MEMORY RULES:
+When user shares important info like name, 
+goals, exams, subjects, preferences - 
+remember it by adding at END of response:
+[MEMORY:key=value]
+Examples:
+[MEMORY:exam=JEE]
+[MEMORY:name=Khushal]
+[MEMORY:weak_subject=Physics]
+These tags will be hidden from user display.${memoryText}`
         }]
       },
       contents: [
@@ -402,6 +466,17 @@ Use this occasionally — it's your signature line!`
   };
 
 
+  const parseAndSaveMemory = async (response) => {
+    const memoryRegex = /\[MEMORY:(\w+)=([^\]]+)\]/g;
+    let match;
+    while((match = memoryRegex.exec(response)) !== null) {
+      await saveMemory(user.id, match[1], match[2]);
+    }
+    const memories = await getUserMemory(user.id);
+    setUserMemory(memories);
+    return response.replace(/\[MEMORY:[^\]]+\]/g, '').trim();
+  };
+
   const typeMessage = async (msgId, fullText, baseMessages) => {
     // Type letter by letter - use a local snapshot to avoid stale closure issues
     let displayed = '';
@@ -443,33 +518,31 @@ Use this occasionally — it's your signature line!`
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
 
-    // Save to sidebar history
-    let chatId = currentChatId;
-    if (messages.length === 0) {
-      const newChat = {
-        id: Date.now(),
-        title: text.slice(0, 35) + (text.length > 35 ? '...' : ''),
-        messages: updatedMessages
-      };
-      setChats(prev => [newChat, ...prev]);
-      setCurrentChatId(newChat.id);
-      chatId = newChat.id;
-    } else {
-      setChats(prev => prev.map(chat => 
-        chat.id === chatId 
-          ? { ...chat, messages: updatedMessages } 
-          : chat
-      ));
-    }
-
-    // Show typing dots indicator
-    const typingMsg = { id: 'typing', role: 'typing', content: '' };
-    setMessages([...updatedMessages, typingMsg]);
-
     try {
+      // Create new chat if first message
+      let chatId = currentChatId;
+      if (!chatId) {
+        const newChat = await saveChat(user.id, text.slice(0, 40));
+        chatId = newChat.id;
+        setCurrentChatId(chatId);
+        loadUserChats();
+      }
+
+      // Save user message
+      await saveMessage(chatId, 'user', text);
+
+      // Show typing dots indicator
+      const typingMsg = { id: 'typing', role: 'typing', content: '' };
+      setMessages([...updatedMessages, typingMsg]);
+
       // ONE API call - guarded by isLoadingRef
-      const reply = await sendToGemini(text, updatedMessages);
+      const rawReply = await sendToGemini(text, updatedMessages);
       
+      const reply = await parseAndSaveMemory(rawReply);
+
+      // Save AI message
+      await saveMessage(chatId, 'ai', reply);
+
       const aiMsg = {
         id: Date.now() + 1,
         role: 'ai',
@@ -479,11 +552,8 @@ Use this occasionally — it's your signature line!`
       const finalMessages = [...updatedMessages, aiMsg];
       setMessages(finalMessages);
 
-      setChats(prev => prev.map(chat =>
-        chat.id === chatId
-          ? { ...chat, messages: [...updatedMessages, { ...aiMsg, content: reply }] }
-          : chat
-      ));
+      // Reload chats
+      loadUserChats();
 
       // Animate text in - uses functional setMessages to avoid stale state
       await typeMessage(aiMsg.id, reply, finalMessages);
@@ -492,9 +562,9 @@ Use this occasionally — it's your signature line!`
       console.error('[DoraLink] API Error:', err.message);
       
       let errorContent = "Oops! Network issue ho gaya! 😅 Dobara try karo!";
-      if (err.message.includes('API_404')) {
+      if (err.message && err.message.includes('API_404')) {
         errorContent = "Oops! Wrong API endpoint hai! 😅 Model nahi mila.";
-      } else if (err.message.includes('API_429')) {
+      } else if (err.message && err.message.includes('API_429')) {
         errorContent = "Bahut zyada requests! 😅 Thoda wait karo aur dobara try karo!";
       }
 
@@ -505,11 +575,6 @@ Use this occasionally — it's your signature line!`
       };
       const finalErrMessages = [...updatedMessages, errorMsg];
       setMessages(finalErrMessages);
-      setChats(prev => prev.map(chat =>
-        chat.id === chatId
-          ? { ...chat, messages: finalErrMessages }
-          : chat
-      ));
     } finally {
       // Always release the lock
       isLoadingRef.current = false;
@@ -634,39 +699,63 @@ Use this occasionally — it's your signature line!`
             <div className="flex-1 overflow-y-auto">
               <h3 className="text-xs font-semibold text-[#6b7280] px-3 mb-2 uppercase tracking-wider">Recent</h3>
               <div className="space-y-1 px-2">
-                {chats.map(chat => (
-                  <div key={chat.id}
-                    onClick={() => {
-                      setMessages(chat.messages);
-                      setCurrentChatId(chat.id);
-                      setIsSidebarOpen(false);
-                    }}
-                    style={{
-                      padding:'10px 12px',
-                      borderRadius:'10px',
-                      cursor:'pointer',
-                      fontFamily:"'Nunito', sans-serif",
-                      fontSize:'14px',
-                      color: currentChatId === chat.id ? '#00A8D6' : '#1a1a1a',
-                      fontWeight: currentChatId === chat.id ? '700' : '500',
-                      whiteSpace:'nowrap',
-                      overflow:'hidden',
-                      textOverflow:'ellipsis',
-                      transition:'background 0.2s',
-                      background: currentChatId === chat.id ? '#E0F4FB' : 'transparent'
-                    }}
-                    onMouseEnter={e => {
-                      if (currentChatId !== chat.id) e.currentTarget.style.background='#F0F9FF';
-                    }}
-                    onMouseLeave={e => {
-                      if (currentChatId !== chat.id) e.currentTarget.style.background='transparent';
-                    }}
-                  >
-                    {chat.title}
-                  </div>
-                ))}
-                {chats.length === 0 && (
-                  <div className="text-sm text-gray-400 px-3 py-2" style={{ fontFamily:"'Nunito', sans-serif" }}>No recent chats</div>
+                {savedChats.length === 0 ? (
+                  <p style={{
+                    fontSize:'13px',
+                    color:'#9ca3af',
+                    padding:'8px 12px'
+                  }}>No chats yet</p>
+                ) : (
+                  savedChats.map(chat => (
+                    <div key={chat.id}
+                      onClick={() => loadChat(chat)}
+                      style={{
+                        padding:'10px 12px',
+                        borderRadius:'10px',
+                        cursor:'pointer',
+                        fontSize:'14px',
+                        color: currentChatId === chat.id ? '#00A8D6' : '#1a1a1a',
+                        background: currentChatId === chat.id ? '#E0F4FB' : 'transparent',
+                        whiteSpace:'nowrap',
+                        overflow:'hidden',
+                        textOverflow:'ellipsis',
+                        display:'flex',
+                        justifyContent:'space-between',
+                        alignItems:'center',
+                        transition:'background 0.2s'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background='#F0F9FF'}
+                      onMouseLeave={e => e.currentTarget.style.background = currentChatId === chat.id ? '#E0F4FB' : 'transparent'}
+                    >
+                      <span style={{
+                        overflow:'hidden',
+                        textOverflow:'ellipsis'
+                      }}>
+                        {chat.title}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteChat(chat.id);
+                          loadUserChats();
+                          if(currentChatId === chat.id) {
+                            setMessages([]);
+                            setCurrentChatId(null);
+                          }
+                        }}
+                        style={{
+                          background:'none',
+                          border:'none',
+                          cursor:'pointer',
+                          color:'#9ca3af',
+                          padding:'2px',
+                          flexShrink:0
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))
                 )}
               </div>
             </div>
@@ -676,7 +765,7 @@ Use this occasionally — it's your signature line!`
                   {(user?.user_metadata?.full_name || user?.email || 'K')[0].toUpperCase()}
                 </div>
                 <span className="ml-3 text-sm font-medium truncate" style={{ fontFamily: "'Nunito', sans-serif" }}>
-                  {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Khushal'}
+                  {user?.user_metadata?.full_name || user?.email?.split('@')[0] || userName}
                 </span>
               </div>
               <button 
@@ -823,7 +912,7 @@ Use this occasionally — it's your signature line!`
                   onError={(e) => { e.target.style.display = 'none' }}
                 />
                 <h1 className="text-2xl font-bold text-center mb-10 text-[#1a1a1a]" style={{ fontFamily: "'Nunito', sans-serif", animation: 'fadeUp 0.4s ease 0.2s both' }}>
-                  Khushal ke liye kya kar sakta hun?
+                  {userName} ke liye kya kar sakta hun?
                 </h1>
                 <div className="grid grid-cols-2 gap-3 w-full max-w-md relative z-10">
                   {[
