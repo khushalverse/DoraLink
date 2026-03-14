@@ -235,22 +235,18 @@ export default function ChatPage() {
     return response.replace(/\[MEMORY:[^\]]+\]/g, '').trim();
   };
 
-  const typeMessage = async (msgId, fullText, baseMessages) => {
-    // Type letter by letter - use a local snapshot to avoid stale closure issues
-    let displayed = '';
-    for (let i = 0; i < fullText.length; i++) {
-      // STOP check: if abortController is cleared, stop the loop
-      if (!abortControllerRef.current && i > 0) break;
-
-      displayed += fullText[i];
-      const typed = displayed; // capture for closure
-      setMessages(prev => prev.map(m =>
-        m.id === msgId ? { ...m, content: typed } : m
-      ));
-      await new Promise(r => setTimeout(r, 12));
+  const typeMessage = async (msgId, fullText, allMessages) => {
+    let displayed = ''
+    for(let i = 0; i < fullText.length; i++) {
+      displayed += fullText[i]
+      setMessages(prev => prev.map(m => 
+        m.id === msgId 
+          ? { ...m, content: displayed } 
+          : m
+      ))
+      await new Promise(r => setTimeout(r, 15))
     }
-    abortControllerRef.current = null;
-  };
+  }
 
   const handleSend = async (textToUse) => {
     let text = typeof textToUse === 'string' ? textToUse.trim() : inputValue.trim();
