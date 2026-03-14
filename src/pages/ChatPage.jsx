@@ -24,6 +24,7 @@ export default function ChatPage() {
   const [savedChats, setSavedChats] = useState([]);
   const [userMemory, setUserMemory] = useState([]);
   const [showEmptyWarning, setShowEmptyWarning] = useState(false);
+  const [showMicPermission, setShowMicPermission] = useState(false);
 
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [attachedFile, setAttachedFile] = useState(null);
@@ -82,7 +83,7 @@ export default function ChatPage() {
         { audio: true }
       )
     } catch(err) {
-      alert('Mic permission do! Settings mein jaake allow karo.')
+      setShowMicPermission(true)
       return
     }
 
@@ -1429,6 +1430,95 @@ export default function ChatPage() {
             </div>
           </div>
         )}
+        {showMicPermission && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px'
+          }}>
+            <div style={{
+              background: 'white',
+              borderRadius: '28px',
+              padding: '28px 24px',
+              width: '100%',
+              maxWidth: '320px',
+              textAlign: 'center',
+              animation: 'popIn 0.3s ease'
+            }}>
+              <div style={{
+                fontSize: '52px',
+                marginBottom: '12px'
+              }}>🎤</div>
+              
+              <h3 style={{
+                fontFamily: "'Nunito', sans-serif",
+                fontWeight: '800',
+                fontSize: '18px',
+                color: '#1a1a1a',
+                marginBottom: '8px'
+              }}>Mic Permission Chahiye!</h3>
+              
+              <p style={{
+                fontFamily: "'Nunito', sans-serif",
+                fontSize: '14px',
+                color: '#9ca3af',
+                marginBottom: '24px',
+                lineHeight: '1.5'
+              }}>
+                Voice input ke liye DoraLink ko 
+                microphone access chahiye. 
+                Allow karo toh bolke bhi 
+                pooch sakte ho! 😄
+              </p>
+
+              <button
+                onClick={async () => {
+                  setShowMicPermission(false)
+                  try {
+                    await navigator.mediaDevices
+                      .getUserMedia({ audio: true })
+                    startVoiceInput()
+                  } catch(err) {
+                    alert('Settings mein jaake manually allow karo!')
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  background: '#00A8D6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '50px',
+                  fontFamily: "'Nunito', sans-serif",
+                  fontWeight: '700',
+                  fontSize: '15px',
+                  cursor: 'pointer',
+                  marginBottom: '10px'
+                }}
+              >Allow Karo 🎤</button>
+
+              <button
+                onClick={() => setShowMicPermission(false)}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: 'none',
+                  border: 'none',
+                  fontFamily: "'Nunito', sans-serif",
+                  fontSize: '14px',
+                  color: '#9ca3af',
+                  cursor: 'pointer'
+                }}
+              >Abhi Nahi</button>
+            </div>
+          </div>
+        )}
+
       </div>
     </>
   );
