@@ -159,13 +159,16 @@ export default function ChatPage() {
     e.stopPropagation()
     try {
       await deleteChat(chatId)
-      setSavedChats(prev => prev.filter(c => c.id !== chatId))
+      setSavedChats(prev => 
+        prev.filter(c => c.id !== chatId)
+      )
       if(currentChatId === chatId) {
         setMessages([])
         setCurrentChatId(null)
+        setIsSidebarOpen(false)
       }
     } catch(err) {
-      console.error('Delete error:', err)
+      console.error('Delete failed:', err)
     }
   };
 

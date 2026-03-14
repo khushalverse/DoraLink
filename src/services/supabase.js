@@ -58,21 +58,25 @@ export const getChatMessages = async (chatId) => {
 
 // Delete a chat
 export const deleteChat = async (chatId) => {
-  // First delete all messages of this chat
   const { error: msgError } = await supabase
     .from('messages')
     .delete()
     .eq('chat_id', chatId)
   
-  if(msgError) throw msgError
+  if(msgError) {
+    console.error('Message delete error:', msgError)
+    throw msgError
+  }
 
-  // Then delete the chat
-  const { error } = await supabase
+  const { error: chatError } = await supabase
     .from('chats')
     .delete()
     .eq('id', chatId)
   
-  if(error) throw error
+  if(chatError) {
+    console.error('Chat delete error:', chatError)
+    throw chatError
+  }
 }
 
 export const saveMemory = async (userId, key, value) => {
