@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
 import ChatPage from './pages/ChatPage';
 import HabitPage from './pages/HabitPage';
 import ProfilePage from './pages/ProfilePage';
+import CalculatorPage from './pages/CalculatorPage';
 
 import { useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/habits" element={<HabitPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/calculator" element={<CalculatorPage />} />
         </Routes>
       </div>
     </BrowserRouter>
