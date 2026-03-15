@@ -1706,16 +1706,16 @@ NO markdown. SHORT responses only!`
                       </div>
                       
                       {/* Single Chat Area - all messages here */}
-                      <div style={{
-                        minHeight: '200px',
-                        maxHeight: '300px',
-                        overflowY: 'auto',
-                        marginBottom: '12px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '10px',
-                        padding: '4px'
-                      }}>
+                        <div style={{
+                          flex: 1,
+                          overflowY: 'auto',
+                          padding: '0 16px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '10px',
+                          minHeight: '150px',
+                          maxHeight: '280px'
+                        }}>
                         {/* Welcome message if no history */}
                         {coachHistory.length === 0 && !coachMessage && (
                           <div style={{
@@ -1825,7 +1825,7 @@ NO markdown. SHORT responses only!`
                       <div style={{
                         display: 'flex',
                         gap: '8px',
-                        marginBottom: '12px',
+                        padding: '8px 16px 24px 16px',
                         alignItems: 'center'
                       }}>
                         <input
@@ -1881,7 +1881,8 @@ NO markdown. SHORT responses only!`
                       <div style={{
                         display: 'grid',
                         gridTemplateColumns: '1fr 1fr',
-                        gap: '8px'
+                        gap: '8px',
+                        padding: '8px 16px'
                       }}>
                         {[
                           {type:'analyze', label:'📊 Analyze my habits'},
