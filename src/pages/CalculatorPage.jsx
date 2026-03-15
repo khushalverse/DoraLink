@@ -531,58 +531,137 @@ export default function CalculatorPage() {
           zIndex: 1,
           animation: 'popIn 0.3s ease'
         }}>
-          {/* Science Extra Buttons */}
+          
+          {/* ROW 1 - Trig */}
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '8px',
-            marginBottom: '8px'
+            background: 'white',
+            borderRadius: '16px',
+            padding: '8px',
+            marginBottom: '6px',
+            boxShadow: '0 2px 8px rgba(0,168,214,0.06)'
           }}>
-            {[
-              {label:'sin', type:'science'},
-              {label:'cos', type:'science'},
-              {label:'tan', type:'science'},
-              {label:'π', type:'science'},
-              {label:'sin⁻¹', type:'science'},
-              {label:'cos⁻¹', type:'science'},
-              {label:'tan⁻¹', type:'science'},
-              {label:'e', type:'science'},
-              {label:'log', type:'science'},
-              {label:'ln', type:'science'},
-              {label:'√', type:'science'},
-              {label:'x²', type:'science'},
-              {label:'x³', type:'science'},
-              {label:'1/x', type:'science'},
-              {label:'n!', type:'science'},
-              {label:'()', type:'science'},
-            ].map((btn, i) => (
-              <button
-                key={i}
-                className="calc-btn"
-                onClick={() => handleScience(btn.label)}
-                style={{
-                  width: '100%',
-                  padding: '14px 4px',
-                  borderRadius: '16px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontFamily: "'Nunito', sans-serif",
-                  fontWeight: '700',
-                  fontSize: '13px',
-                  background: '#EEF4FF',
-                  color: '#6C5CE7',
-                  boxShadow: '0 2px 8px rgba(108,92,231,0.1)',
-                  transition: 'all 0.1s ease'
-                }}
-              >{btn.label}</button>
-            ))}
+            <p style={{
+              fontSize: '10px',
+              color: '#9ca3af',
+              fontWeight: '700',
+              marginBottom: '6px',
+              paddingLeft: '4px',
+              letterSpacing: '1px'
+            }}>TRIGONOMETRY</p>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(6, 1fr)',
+              gap: '6px'
+            }}>
+              {['sin','cos','tan',
+                'sin⁻¹','cos⁻¹','tan⁻¹'
+              ].map(f => (
+                <button key={f}
+                  className="calc-btn"
+                  onClick={() => handleScience(f)}
+                  style={{
+                    padding: '10px 2px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontFamily: "'Nunito', sans-serif",
+                    fontWeight: '700',
+                    fontSize: '11px',
+                    background: '#EEF4FF',
+                    color: '#6C5CE7'
+                  }}
+                >{f}</button>
+              ))}
+            </div>
           </div>
 
-          {/* Basic buttons below */}
+          {/* ROW 2 - Functions */}
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '8px',
+            marginBottom: '6px',
+            boxShadow: '0 2px 8px rgba(0,168,214,0.06)'
+          }}>
+            <p style={{
+              fontSize: '10px',
+              color: '#9ca3af',
+              fontWeight: '700',
+              marginBottom: '6px',
+              paddingLeft: '4px',
+              letterSpacing: '1px'
+            }}>FUNCTIONS</p>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(6, 1fr)',
+              gap: '6px'
+            }}>
+              {['log','ln','√','x²','x³','1/x'].map(f => (
+                <button key={f}
+                  className="calc-btn"
+                  onClick={() => handleScience(f)}
+                  style={{
+                    padding: '10px 2px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontFamily: "'Nunito', sans-serif",
+                    fontWeight: '700',
+                    fontSize: '12px',
+                    background: '#E8F5FF',
+                    color: '#00A8D6'
+                  }}
+                >{f}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* ROW 3 - Constants */}
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '8px',
+            marginBottom: '6px',
+            boxShadow: '0 2px 8px rgba(0,168,214,0.06)'
+          }}>
+            <p style={{
+              fontSize: '10px',
+              color: '#9ca3af',
+              fontWeight: '700',
+              marginBottom: '6px',
+              paddingLeft: '4px',
+              letterSpacing: '1px'
+            }}>CONSTANTS & MORE</p>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '6px'
+            }}>
+              {['π','e','n!','()'].map(f => (
+                <button key={f}
+                  className="calc-btn"
+                  onClick={() => handleScience(f)}
+                  style={{
+                    padding: '10px 2px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontFamily: "'Nunito', sans-serif",
+                    fontWeight: '700',
+                    fontSize: '14px',
+                    background: '#FFF0FF',
+                    color: '#A29BFE'
+                  }}
+                >{f}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Basic Calculator Buttons - smaller */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '10px'
+            gap: '6px'
           }}>
             {buttons.map((btn, i) => (
               <button
@@ -593,7 +672,10 @@ export default function CalculatorPage() {
                   ...buttonStyle(btn.type),
                   gridColumn: btn.wide ? 'span 2' : 'span 1',
                   aspectRatio: btn.wide ? 'auto' : '1',
-                  padding: btn.wide ? '20px' : undefined
+                  padding: btn.wide ? '14px' : undefined,
+                  fontSize: btn.type === 'number' 
+                    ? '18px' : '16px',
+                  borderRadius: '14px'
                 }}
               >
                 {btn.label}
