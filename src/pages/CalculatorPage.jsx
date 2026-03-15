@@ -10,6 +10,7 @@ export default function CalculatorPage() {
   const [history, setHistory] = useState([])
   const [activeMode, setActiveMode] = useState('basic')
   const [error, setError] = useState('')
+  const [openSection, setOpenSection] = useState(null)
 
   const handleButton = (value) => {
     setError('')
@@ -526,142 +527,132 @@ export default function CalculatorPage() {
 
       {activeMode === 'science' && (
         <div style={{
-          margin: '8px 16px',
+          margin: '4px 16px',
           position: 'relative',
           zIndex: 1,
           animation: 'popIn 0.3s ease'
         }}>
-          
-          {/* ROW 1 - Trig */}
-          <div style={{
-            background: 'white',
-            borderRadius: '16px',
-            padding: '8px',
-            marginBottom: '6px',
-            boxShadow: '0 2px 8px rgba(0,168,214,0.06)'
-          }}>
-            <p style={{
-              fontSize: '10px',
-              color: '#9ca3af',
-              fontWeight: '700',
-              marginBottom: '6px',
-              paddingLeft: '4px',
-              letterSpacing: '1px'
-            }}>TRIGONOMETRY</p>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(6, 1fr)',
-              gap: '6px'
-            }}>
-              {['sin','cos','tan',
+
+          {/* Collapsible Sections */}
+          {[
+            {
+              id: 'trig',
+              label: '📐 Trigonometry',
+              color: '#EEF4FF',
+              textColor: '#6C5CE7',
+              functions: [
+                'sin','cos','tan',
                 'sin⁻¹','cos⁻¹','tan⁻¹'
-              ].map(f => (
-                <button key={f}
-                  className="calc-btn"
-                  onClick={() => handleScience(f)}
+              ]
+            },
+            {
+              id: 'func',
+              label: '🔢 Functions',
+              color: '#E8F5FF',
+              textColor: '#00A8D6',
+              functions: ['log','ln','√','x²','x³','1/x']
+            },
+            {
+              id: 'const',
+              label: '✨ Constants',
+              color: '#FFF0FF',
+              textColor: '#A29BFE',
+              functions: ['π','e','n!','()']
+            }
+          ].map(section => (
+            <div key={section.id} 
+              style={{marginBottom: '4px'}}
+            >
+              {/* Section Header */}
+              <button
+                onClick={() => setOpenSection(
+                  openSection === section.id 
+                    ? null : section.id
+                )}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 12px',
+                  background: openSection === section.id
+                    ? section.color : 'white',
+                  border: `1.5px solid ${section.color}`,
+                  borderRadius: openSection === section.id
+                    ? '12px 12px 0 0' : '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <span style={{
+                  fontFamily: "'Nunito', sans-serif",
+                  fontWeight: '700',
+                  fontSize: '13px',
+                  color: section.textColor
+                }}>{section.label}</span>
+                <svg width="14" height="14"
+                  viewBox="0 0 24 24" fill="none"
+                  stroke={section.textColor}
+                  strokeWidth="2.5"
                   style={{
-                    padding: '10px 2px',
-                    borderRadius: '12px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontFamily: "'Nunito', sans-serif",
-                    fontWeight: '700',
-                    fontSize: '11px',
-                    background: '#EEF4FF',
-                    color: '#6C5CE7'
+                    transform: openSection === section.id
+                      ? 'rotate(180deg)' : 'rotate(0)',
+                    transition: 'transform 0.2s ease'
                   }}
-                >{f}</button>
-              ))}
-            </div>
-          </div>
+                >
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
 
-          {/* ROW 2 - Functions */}
-          <div style={{
-            background: 'white',
-            borderRadius: '16px',
-            padding: '8px',
-            marginBottom: '6px',
-            boxShadow: '0 2px 8px rgba(0,168,214,0.06)'
-          }}>
-            <p style={{
-              fontSize: '10px',
-              color: '#9ca3af',
-              fontWeight: '700',
-              marginBottom: '6px',
-              paddingLeft: '4px',
-              letterSpacing: '1px'
-            }}>FUNCTIONS</p>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(6, 1fr)',
-              gap: '6px'
-            }}>
-              {['log','ln','√','x²','x³','1/x'].map(f => (
-                <button key={f}
-                  className="calc-btn"
-                  onClick={() => handleScience(f)}
-                  style={{
-                    padding: '10px 2px',
-                    borderRadius: '12px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontFamily: "'Nunito', sans-serif",
-                    fontWeight: '700',
-                    fontSize: '12px',
-                    background: '#E8F5FF',
-                    color: '#00A8D6'
-                  }}
-                >{f}</button>
-              ))}
+              {/* Section Content */}
+              {openSection === section.id && (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 
+                    section.functions.length === 4
+                      ? 'repeat(4, 1fr)'
+                      : 'repeat(6, 1fr)',
+                  gap: '4px',
+                  padding: '8px',
+                  background: section.color,
+                  borderRadius: '0 0 12px 12px',
+                  border: `1.5px solid ${section.color}`,
+                  borderTop: 'none',
+                  animation: 'fadeUp 0.2s ease'
+                }}>
+                  {section.functions.map(f => (
+                    <button
+                      key={f}
+                      className="calc-btn"
+                      onClick={() => {
+                        handleScience(f)
+                        setOpenSection(null)
+                      }}
+                      style={{
+                        padding: '10px 2px',
+                        borderRadius: '10px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontFamily: "'Nunito', sans-serif",
+                        fontWeight: '700',
+                        fontSize: '11px',
+                        background: 'white',
+                        color: section.textColor,
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.06)'
+                      }}
+                    >{f}</button>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
+          ))}
 
-          {/* ROW 3 - Constants */}
-          <div style={{
-            background: 'white',
-            borderRadius: '16px',
-            padding: '8px',
-            marginBottom: '6px',
-            boxShadow: '0 2px 8px rgba(0,168,214,0.06)'
-          }}>
-            <p style={{
-              fontSize: '10px',
-              color: '#9ca3af',
-              fontWeight: '700',
-              marginBottom: '6px',
-              paddingLeft: '4px',
-              letterSpacing: '1px'
-            }}>CONSTANTS & MORE</p>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: '6px'
-            }}>
-              {['π','e','n!','()'].map(f => (
-                <button key={f}
-                  className="calc-btn"
-                  onClick={() => handleScience(f)}
-                  style={{
-                    padding: '10px 2px',
-                    borderRadius: '12px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontFamily: "'Nunito', sans-serif",
-                    fontWeight: '700',
-                    fontSize: '14px',
-                    background: '#FFF0FF',
-                    color: '#A29BFE'
-                  }}
-                >{f}</button>
-              ))}
-            </div>
-          </div>
-
-          {/* Basic Calculator Buttons - smaller */}
+          {/* Basic Calculator Buttons - compact */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '6px'
+            gap: '5px',
+            marginTop: '4px'
           }}>
             {buttons.map((btn, i) => (
               <button
@@ -669,13 +660,32 @@ export default function CalculatorPage() {
                 className="calc-btn"
                 onClick={() => handleButton(btn.label)}
                 style={{
-                  ...buttonStyle(btn.type),
-                  gridColumn: btn.wide ? 'span 2' : 'span 1',
+                  width: '100%',
                   aspectRatio: btn.wide ? 'auto' : '1',
-                  padding: btn.wide ? '14px' : undefined,
+                  padding: btn.wide ? '12px' : undefined,
+                  gridColumn: btn.wide ? 'span 2' : 'span 1',
+                  borderRadius: '14px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: "'Nunito', sans-serif",
+                  fontWeight: '800',
                   fontSize: btn.type === 'number' 
                     ? '18px' : '16px',
-                  borderRadius: '14px'
+                  background: 
+                    btn.type === 'number' ? 'white' :
+                    btn.type === 'operator' ? '#E0F4FB' :
+                    btn.type === 'equals' ? '#00A8D6' :
+                    btn.type === 'clear' ? '#FFE0E0' :
+                    '#F0F9FF',
+                  color:
+                    btn.type === 'number' ? '#1a1a1a' :
+                    btn.type === 'operator' ? '#00A8D6' :
+                    btn.type === 'equals' ? 'white' :
+                    btn.type === 'clear' ? '#FF4444' :
+                    '#00A8D6',
+                  boxShadow: btn.type === 'equals'
+                    ? '0 4px 12px rgba(0,168,214,0.3)'
+                    : '0 2px 6px rgba(0,168,214,0.08)'
                 }}
               >
                 {btn.label}
