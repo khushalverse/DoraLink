@@ -752,12 +752,6 @@ export default function ChatPage() {
                         onClick: () => {}
                       },
                       { 
-                        icon:'🤖', 
-                        label:'AI Model', 
-                        sub:'Gemini 2.0 Flash',
-                        onClick: () => {}
-                      },
-                      { 
                         icon:'🔑', 
                         label:'API Key', 
                         sub:'Manage your key',
