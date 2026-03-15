@@ -784,14 +784,8 @@ NO markdown. SHORT responses only!`
           to { opacity:1; transform:translateX(0) }
         }
         @keyframes slideInUp {
-          from { 
-            transform: translateY(100%);
-            opacity: 0;
-          }
-          to { 
-            transform: translateY(0);
-            opacity: 1;
-          }
+          from { transform: translateY(100%) }
+          to { transform: translateY(0) }
         }
         @keyframes roastShake {
           0%,100% { transform:translateX(0) }
@@ -1698,7 +1692,7 @@ NO markdown. SHORT responses only!`
                     maxHeight: '75vh',
                     display: 'flex',
                     flexDirection: 'column',
-                    animation: 'slideInUp 0.35s cubic-bezier(0.34,1.56,0.64,1)',
+                    animation: 'slideInUp 0.3s ease',
                     boxShadow: '0 -8px 32px rgba(0,168,214,0.12)'
                   }}>
                       <div className="flex justify-between items-center mb-4 shrink-0">
