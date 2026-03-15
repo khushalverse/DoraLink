@@ -29,7 +29,6 @@ const callGemini = async (
         ? { parts: [{ text: systemPrompt }] } 
         : undefined,
       contents,
-      tools: [{ googleSearch: {} }],
       generationConfig: {
         temperature: 0.9,
         maxOutputTokens: config.maxTokens
