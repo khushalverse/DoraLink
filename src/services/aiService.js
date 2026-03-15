@@ -121,7 +121,7 @@ const callGroq = async (
 const askAIIfSearchNeeded = async (message) => {
   try {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent?key=${apiKey}`
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`
     
     const response = await fetch(url, {
       method: 'POST',
@@ -156,10 +156,11 @@ Reply with ONLY one word: YES or NO`
     })
     
     const data = await response.json()
-    const decision = data.candidates?.[0]
-      ?.content?.parts?.[0]?.text
-      ?.trim()
-      ?.toUpperCase()
+    const rawText = data.candidates?.[0]
+      ?.content?.parts?.[0]?.text || ''
+    const decision = rawText.trim()
+      .toUpperCase()
+      .includes('YES') ? 'YES' : 'NO'
     
     console.log(`🤔 Search needed? ${decision} for: "${message}"`)
     return decision === 'YES'
