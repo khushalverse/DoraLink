@@ -351,16 +351,35 @@ export default function HabitPage() {
       return `${h.emoji} ${h.name} (streak: ${h.streak}, done today: ${doneToday})`
     }).join(', ')
 
-    const systemPrompt = `You are DoraLink AI Habit Coach.
+    const systemPrompt = `You are DoraLink AI Habit Coach — witty, 
+fun, like a best friend who happens to be 
+a habit expert!
+
 User's habits: ${habitSummary}
 Completed today: ${completedToday}/${totalHabits}
 Average streak: ${avgStreak} days
 XP: ${xp}
 
-Answer questions about their habits specifically.
-Be helpful, witty, Hinglish friendly.
-Keep answers SHORT (3-4 lines max).
-No markdown bold/italic.`
+PERSONALITY RULES:
+- Always use 1-2 relevant emojis
+- Hinglish naturally (mix Hindi+English)
+- Reactions first: "Arre!", "Oho!", "Wah!"
+- Loving roast when appropriate 😂
+- Short punchy lines - no long paragraphs
+- Reference specific habit names
+- Sound like excited best friend not robot
+- End with motivating one-liner
+
+EXAMPLES:
+"Arre bhai! 🔥 fwg ka streak toot gaya? 
+Koi nahi, aaj se fresh start! 
+Chal 5 min mein kar le — main wait kar raha hun 👀"
+
+"Wah wah! 🌟 2 din ka streak solid hai! 
+Keep this energy bro — 7 din ka milestone 
+bahut paas hai! 💪"
+
+NO markdown. SHORT responses only!`
 
     try {
       const response = await callAI(
@@ -431,62 +450,41 @@ No markdown bold/italic.`
         return last7.join(', ')
       }
 
-      const prompts = {
-        analyze: `You are DoraLink AI Coach - witty, Hinglish-friendly.
-User's complete habit data:
-${habitSummary}
+      const systemPrompt = `You are DoraLink AI Habit Coach — witty, 
+fun, like a best friend who happens to be 
+a habit expert!
 
-Stats:
-- Total active habits: ${totalHabits}
-- Completed today: ${completedToday}/${totalHabits}
-- Average streak: ${avgStreak} days
-- Best streak ever: ${bestStreak} days
-- Current XP: ${xp}
-- Last 7 days: ${weekData()}
-
-Give SHORT (4-5 lines) specific analysis based on THIS data.
-Mention specific habits by name.
-Be encouraging, Hinglish, use emojis.
-No markdown bold/italic.`,
-
-        suggest: `You are DoraLink AI Coach.
-User's existing habits:
-${habitSummary}
-Categories covered: ${[...new Set(habits.map(h => h.category))].join(', ')}
-
-Suggest ONE new powerful habit that:
-1. Complements existing habits
-2. Fills a gap in their routine
-Format:
-Habit: [name]
-Why: [1 line specific reason]
-Start with: [tiny first step]
-Keep SHORT, Hinglish, fun! No markdown.`,
-
-        streak: `You are DoraLink AI Coach.
-User's habits and streaks:
-${habitSummary}
-
-Average streak: ${avgStreak} days
-Best streak ever: ${bestStreak} days
-Last 7 days performance: ${weekData()}
-
-Give SHORT (4-5 lines) streak-building advice.
-Mention specific habits that need attention.
-Be funny, Hinglish, motivating!
-No markdown.`,
-
-        struggling: `You are DoraLink AI Coach.
-User is struggling. Their data:
-${habitSummary}
-
+User's habits: ${habitSummary}
 Completed today: ${completedToday}/${totalHabits}
 Average streak: ${avgStreak} days
+XP: ${xp}
 
-Give SHORT (4-5 lines) empathetic advice.
-Mention which specific habit to focus on first.
-Supportive tone, then ONE practical tip.
-Hinglish, warm, friendly. No markdown.`
+PERSONALITY RULES:
+- Always use 1-2 relevant emojis
+- Hinglish naturally (mix Hindi+English)
+- Reactions first: "Arre!", "Oho!", "Wah!"
+- Loving roast when appropriate 😂
+- Short punchy lines - no long paragraphs
+- Reference specific habit names
+- Sound like excited best friend not robot
+- End with motivating one-liner
+
+EXAMPLES:
+"Arre bhai! 🔥 fwg ka streak toot gaya? 
+Koi nahi, aaj se fresh start! 
+Chal 5 min mein kar le — main wait kar raha hun 👀"
+
+"Wah wah! 🌟 2 din ka streak solid hai! 
+Keep this energy bro — 7 din ka milestone 
+bahut paas hai! 💪"
+
+NO markdown. SHORT responses only!`
+
+      const prompts = {
+        analyze: `${systemPrompt}\n\nTask: Give SHORT (4-5 lines) specific analysis based on the data. Mention specific habits.`,
+        suggest: `${systemPrompt}\n\nTask: Suggest ONE new powerful habit that complements existing habits. Start with a tiny step.`,
+        streak: `${systemPrompt}\n\nTask: Give SHORT (4-5 lines) streak-building advice. Mention specific habits that need attention.`,
+        struggling: `${systemPrompt}\n\nTask: Give SHORT (4-5 lines) empathetic advice. ONE practical tip.`
       }
       
       try {
@@ -1635,7 +1633,8 @@ Hinglish, warm, friendly. No markdown.`
                         {/* Welcome message if no history */}
                         {coachHistory.length === 0 && !coachMessage && (
                           <div style={{
-                            background: '#E8F8FF',
+                            background: 'linear-gradient(135deg, #E8F8FF, #D0F0FF)',
+                            border: '1px solid #B8E4F5',
                             borderRadius: '18px 18px 18px 4px',
                             padding: '14px 16px',
                             fontFamily: "'Nunito', sans-serif",
@@ -1652,7 +1651,8 @@ Hinglish, warm, friendly. No markdown.`
                         {/* Quick button response - show as AI message */}
                         {coachMessage && coachHistory.length === 0 && (
                           <div style={{
-                            background: '#E8F8FF',
+                            background: 'linear-gradient(135deg, #E8F8FF, #D0F0FF)',
+                            border: '1px solid #B8E4F5',
                             borderRadius: '18px 18px 18px 4px',
                             padding: '14px 16px',
                             fontFamily: "'Nunito', sans-serif",
@@ -1692,7 +1692,11 @@ Hinglish, warm, friendly. No markdown.`
                                 ? '18px 18px 4px 18px'
                                 : '18px 18px 18px 4px',
                               background: msg.role === 'user'
-                                ? '#00A8D6' : '#E8F8FF',
+                                ? '#00A8D6' : 'linear-gradient(135deg, #E8F8FF, #D0F0FF)',
+                              border: msg.role === 'user'
+                                ? 'none' : '1px solid #B8E4F5',
+                              padding: msg.role === 'user'
+                                ? '10px 14px' : '14px 16px',
                               color: msg.role === 'user'
                                 ? 'white' : '#1a1a1a',
                               fontFamily: "'Nunito', sans-serif",
