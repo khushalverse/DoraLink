@@ -101,24 +101,28 @@ export default function HabitPage() {
   }, [user])
 
   const loadHabitsFromDb = async () => {
+    if(!user) return
     try {
       const data = await getUserHabits(user.id)
-      // Convert snake_case from DB to camelCase
-      const formatted = data.map(h => ({
-        id: h.id,
-        name: h.name,
-        emoji: h.emoji,
-        category: h.category,
-        color: h.color,
-        streak: h.streak,
-        bestStreak: h.best_streak,
-        totalCompletions: h.total_completions,
-        completedDates: h.completed_dates || [],
-        isPaused: h.is_paused,
-        notes: h.notes,
-        createdAt: h.created_at
-      }))
-      setHabits(formatted)
+      if(data && data.length > 0) {
+        const formatted = data.map(h => ({
+          id: h.id,
+          name: h.name,
+          emoji: h.emoji || '💪',
+          category: h.category || 'Health',
+          color: h.color || '#00A8D6',
+          streak: h.streak || 0,
+          bestStreak: h.best_streak || 0,
+          totalCompletions: h.total_completions || 0,
+          completedDates: h.completed_dates || [],
+          isPaused: h.is_paused || false,
+          notes: h.notes || '',
+          frequency: h.frequency || 'daily',
+          specificDays: h.specific_days || [0,1,2,3,4,5,6],
+          createdAt: h.created_at
+        }))
+        setHabits(formatted)
+      }
     } catch(err) {
       console.error('Load habits error:', err)
     }
