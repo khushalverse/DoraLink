@@ -118,77 +118,57 @@ const callGroq = async (
   return data.choices?.[0]?.message?.content || 'No response'
 }
 
-const needsSearch = (message) => {
-  const msg = message.toLowerCase()
-  
-  // DEFINITELY needs search - realtime data
-  const realtimePatterns = [
-    // News
-    'latest news', 'aaj ki news', 'breaking',
-    'current news', 'abhi kya hua',
-    // Sports
-    'ipl', 'cricket score', 'match result',
-    'who won', 'live score',
-    // Weather  
-    'weather', 'mausam', 'temperature',
-    'barish', 'aaj kitni garmi',
-    // Prices
-    'price today', 'aaj ka rate',
-    'stock price', 'share price',
-    'petrol price', 'gold rate',
-    'dollar rate', 'bitcoin',
-    // Current events
-    'election result', 'who is current',
-    'abhi kaun hai', 'latest update',
-    // Specific time queries
-    'aaj ka', 'today\'s', 'right now',
-    'is waqt', 'abhi abhi'
-  ]
-  
-  // NEVER needs search - AI can answer
-  const noSearchPatterns = [
-    // Math/calculations
-    'calculate', 'solve', 'what is',
-    'kitna hoga', 'formula',
-    // General knowledge (historical)
-    'who invented', 'kisne banaya',
-    'history of', 'explain',
-    'what is', 'define', 'meaning',
-    // Personal/app related
-    'who made you', 'kisne banaya tumhe',
-    'doralink', 'habit', 'calculator',
-    'meri habit', 'mera naam',
-    // Concepts
-    'how does', 'kaise kaam karta',
-    'difference between', 'vs',
-    'better option', 'suggest'
-  ]
+const askAIIfSearchNeeded = async (message) => {
+  try {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent?key=${apiKey}`
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        contents: [{
+          role: 'user',
+          parts: [{ text: `You are a decision maker. 
+Decide if this query needs real-time web search 
+or can be answered from training knowledge.
 
-  // First check if it clearly doesnt need search
-  const definitelyNoSearch = noSearchPatterns.some(
-    p => msg.includes(p)
-  )
-  if(definitelyNoSearch) return false
+Query: "${message}"
 
-  // Then check if it needs realtime data
-  const definitelyNeedsSearch = realtimePatterns.some(
-    p => msg.includes(p)
-  )
-  if(definitelyNeedsSearch) return true
+Rules:
+- Need search: current news, prices, scores, 
+  weather, recent events, 2025/2026 updates,
+  war/conflict updates, stock prices, 
+  new product launches, election results,
+  anything that changes frequently
+- No search: math, definitions, concepts, 
+  history, general knowledge, personal questions,
+  timeless facts, app-related questions
 
-  // For date/time - only if asking current
-  const dateTimePatterns = [
-    'aaj kya date', 'what date today',
-    'aaj konsa din', 'what day today',
-    'abhi kya time', 'current time',
-    'aaj ka date', "today's date"
-  ]
-  if(dateTimePatterns.some(p => msg.includes(p))) {
-    return false // We have date in system prompt!
+Reply with ONLY one word: YES or NO` 
+          }]
+        }],
+        generationConfig: {
+          temperature: 0,
+          maxOutputTokens: 5
+        }
+      })
+    })
+    
+    const data = await response.json()
+    const decision = data.candidates?.[0]
+      ?.content?.parts?.[0]?.text
+      ?.trim()
+      ?.toUpperCase()
+    
+    console.log(`🤔 Search needed? ${decision} for: "${message}"`)
+    return decision === 'YES'
+    
+  } catch(err) {
+    console.error('Decision error:', err)
+    // Fallback to keyword check if AI fails
+    return false
   }
-
-  // Default = no search (save credits!)
-  return false
 }
 
 export const callAI = async (
@@ -201,7 +181,9 @@ export const callAI = async (
   const config = getActiveConfig()
   if(maxTokens) config.maxTokens = maxTokens
 
-  const shouldSearch = needsSearch(userMessage)
+  const shouldSearch = await askAIIfSearchNeeded(
+    userMessage
+  )
 
   let enhancedMessage = userMessage
   
@@ -211,10 +193,10 @@ export const callAI = async (
     if(searchResults) {
       enhancedMessage = `${userMessage}
 
-[Web Search Results - Use this for accurate answer]:
+[Web Search Results]:
 ${searchResults}
 
-Answer based on above search results.`
+Use above search results to answer accurately.`
     }
   }
 
