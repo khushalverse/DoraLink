@@ -121,7 +121,7 @@ const callGroq = async (
 const askAIIfSearchNeeded = async (message) => {
   try {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${apiKey}`
     
     const response = await fetch(url, {
       method: 'POST',
