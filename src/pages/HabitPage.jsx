@@ -1648,7 +1648,7 @@ NO markdown. SHORT responses only!`
             onClick={() => setShowCoach(true)}
             style={{
               position: 'fixed',
-              top: '12px',
+              bottom: '90px',
               right: '16px',
               width: '46px',
               height: '46px',
