@@ -51,6 +51,7 @@ export default function HabitPage() {
   const [coachInput, setCoachInput] = useState('');
   const [coachHistory, setCoachHistory] = useState([]);
   const [displayName, setDisplayName] = useState('')
+  const [userBio, setUserBio] = useState('')
 
   useEffect(() => {
     if(user) {
@@ -61,6 +62,9 @@ export default function HabitPage() {
           setDisplayName(
             user?.email?.split('@')[0] || 'friend'
           )
+        }
+        if(profile?.bio) {
+          setUserBio(profile.bio)
         }
       })
     }
@@ -375,6 +379,7 @@ User's habits: ${habitSummary}
 Completed today: ${completedToday}/${totalHabits}
 Average streak: ${avgStreak} days
 XP: ${xp}
+Bio: ${userBio || 'Not shared yet'}
 
 PERSONALITY RULES:
 - Always use 1-2 relevant emojis
@@ -474,6 +479,7 @@ User's habits: ${habitSummary}
 Completed today: ${completedToday}/${totalHabits}
 Average streak: ${avgStreak} days
 XP: ${xp}
+Bio: ${userBio || 'Not shared yet'}
 
 PERSONALITY RULES:
 - Always use 1-2 relevant emojis

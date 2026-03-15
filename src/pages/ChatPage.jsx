@@ -26,12 +26,14 @@ export default function ChatPage() {
   const [showEmptyWarning, setShowEmptyWarning] = useState(false);
   const [showMicPermission, setShowMicPermission] = useState(false);
   const [displayName, setDisplayName] = useState('')
+  const [profile, setProfile] = useState(null)
 
   useEffect(() => {
     if(user) {
-      getUserProfile(user.id).then(profile => {
-        if(profile?.display_name) {
-          setDisplayName(profile.display_name)
+      getUserProfile(user.id).then(p => {
+        setProfile(p)
+        if(p?.display_name) {
+          setDisplayName(p.display_name)
         } else {
           setDisplayName(
             user?.email?.split('@')[0] || 'friend'
@@ -261,8 +263,13 @@ export default function ChatPage() {
   }, [messages, userScrolled]);
 
   const sendToGemini = async (userMessage, history) => {
-    const systemPrompt = buildSystemPrompt(displayName)
-    return await callAI(userMessage, systemPrompt, history)
+    const systemPrompt = buildSystemPrompt(
+      displayName,
+      profile?.bio || ''
+    )
+    return await callAI(
+      userMessage, systemPrompt, history
+    )
   }
 
 
