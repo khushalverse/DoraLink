@@ -701,7 +701,7 @@ export default function CalculatorPage() {
                   borderRadius: '10px',
                   border: 'none',
                   cursor: 'pointer',
-                  gridColumn: btn.label === '=' ? 'span 2' : 'span 1',
+                  gridColumn: btn.label === '0' ? 'span 2' : 'span 1',
                   fontFamily: "'Nunito', sans-serif",
                   fontWeight: '800',
                   fontSize: btn.type === 'number' 
