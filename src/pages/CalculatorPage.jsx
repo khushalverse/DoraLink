@@ -512,6 +512,8 @@ export default function CalculatorPage() {
         .calc-btn:active {
           transform: scale(0.92) !important;
         }
+        .science-scroll::-webkit-scrollbar { display: none; }
+        .science-scroll { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
       {/* Background blobs */}
@@ -690,12 +692,18 @@ export default function CalculatorPage() {
       )}
 
       {activeMode === 'science' && (
-        <div style={{
-          margin: '4px 16px',
-          position: 'relative',
-          zIndex: 1,
-          animation: 'popIn 0.3s ease'
-        }}>
+        <div 
+          className="science-scroll"
+          style={{
+            margin: '4px 16px',
+            position: 'relative',
+            zIndex: 1,
+            animation: 'popIn 0.3s ease',
+            overflowY: 'auto',
+            maxHeight: 'calc(100vh - 190px)',
+            paddingBottom: '8px'
+          }}
+        >
 
           {/* Collapsible Sections */}
           {[
