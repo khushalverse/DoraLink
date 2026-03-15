@@ -1,6 +1,7 @@
 export const buildSystemPrompt = (
   userName = 'friend', 
-  userBio = ''
+  userBio = '',
+  habitsData = []
 ) => {
   return `
 You are DoraLink — not just an AI, but a living, 
@@ -169,6 +170,28 @@ USE THIS INFO:
 - Suggest relevant study tips
 - Make responses personalized
 - Never ask what they already told you!
+` : ''}
+
+${habitsData.length > 0 ? `
+━━━━━━━━━━━━━━━━━━━━━━━━
+📊 USER'S HABIT DATA
+━━━━━━━━━━━━━━━━━━━━━━━━
+User's active habits:
+${habitsData.map(h => {
+  const today = new Date().toDateString()
+  const doneToday = h.completedDates?.some(d =>
+    new Date(d).toDateString() === today
+  )
+  return `${h.emoji} ${h.name} (${h.category}, streak: ${h.streak} days, done today: ${doneToday})`
+}).join('\n')}
+
+USE THIS DATA:
+- Answer questions about their habits accurately
+- Reference specific habit names
+- Know their streaks and completions
+- Motivate based on actual progress
+- If asked "what did I complete today" 
+  answer from this data!
 ` : ''}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━

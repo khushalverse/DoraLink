@@ -7,7 +7,7 @@ import {
   Plus, Mic, ArrowUp, ChevronDown, MoreVertical, LogOut, Trash2, Camera, ImageIcon, X, Paperclip
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { saveChat, saveMessage, getUserChats, getChatMessages, deleteChat, saveMemory, getUserMemory, getUserProfile } from '../services/supabase';
+import { saveChat, saveMessage, getUserChats, getChatMessages, deleteChat, saveMemory, getUserMemory, getUserProfile, getUserHabits } from '../services/supabase';
 
 export default function ChatPage() {
   const navigate = useNavigate();
@@ -28,6 +28,7 @@ export default function ChatPage() {
   const [showMicPermission, setShowMicPermission] = useState(false);
   const [displayName, setDisplayName] = useState('')
   const [profile, setProfile] = useState(null)
+  const [userHabits, setUserHabits] = useState([])
 
   useEffect(() => {
     if(user) {
@@ -41,6 +42,19 @@ export default function ChatPage() {
           )
         }
       })
+      getUserHabits(user.id).then(data => {
+        if(data) {
+          const formatted = data.map(h => ({
+            name: h.name,
+            emoji: h.emoji,
+            streak: h.streak,
+            category: h.category,
+            completedDates: h.completed_dates || [],
+            isPaused: h.is_paused
+          }))
+          setUserHabits(formatted)
+        }
+      }).catch(console.error)
     }
   }, [user])
 
@@ -266,7 +280,8 @@ export default function ChatPage() {
   const sendToGemini = async (userMessage, history) => {
     const systemPrompt = buildSystemPrompt(
       displayName,
-      profile?.bio || ''
+      profile?.bio || '',
+      userHabits
     )
     return await callAI(
       userMessage, systemPrompt, history
