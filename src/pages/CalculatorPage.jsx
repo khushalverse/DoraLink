@@ -337,11 +337,13 @@ export default function CalculatorPage() {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      height: '100vh',
       background: '#F0F9FF',
       fontFamily: "'Nunito', sans-serif",
       position: 'relative',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column'
     }}>
       <style>{`
         @keyframes popIn {
@@ -442,10 +444,16 @@ export default function CalculatorPage() {
         margin: '8px 16px',
         background: 'white',
         borderRadius: '24px',
-        padding: '20px 24px',
+        padding: '28px 24px',
+        minHeight: '120px',
         boxShadow: '0 4px 16px rgba(0,168,214,0.1)',
-        position: 'relative', zIndex: 1,
-        animation: 'fadeUp 0.3s ease'
+        position: 'relative',
+        zIndex: 1,
+        flex: activeMode === 'basic' ? '1' : '0 0 auto',
+        animation: 'fadeUp 0.3s ease',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center'
       }}>
         {/* Expression */}
         <div style={{
@@ -499,11 +507,12 @@ export default function CalculatorPage() {
       {/* Basic Buttons */}
       {activeMode === 'basic' && (
         <div style={{
-          margin: '8px 16px',
+          margin: '0 16px 16px 16px',
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr)',
           gap: '10px',
-          position: 'relative', zIndex: 1,
+          position: 'relative',
+          zIndex: 1,
           animation: 'popIn 0.3s ease'
         }}>
           {buttons.map((btn, i) => (
@@ -574,7 +583,7 @@ export default function CalculatorPage() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '8px 12px',
+                  padding: '7px 10px',
                   background: openSection === section.id
                     ? section.color : 'white',
                   border: `1.5px solid ${section.color}`,
@@ -612,8 +621,8 @@ export default function CalculatorPage() {
                     section.functions.length === 4
                       ? 'repeat(4, 1fr)'
                       : 'repeat(6, 1fr)',
-                  gap: '4px',
-                  padding: '8px',
+                  gap: '3px',
+                  padding: '6px',
                   background: section.color,
                   borderRadius: '0 0 12px 12px',
                   border: `1.5px solid ${section.color}`,
@@ -629,13 +638,13 @@ export default function CalculatorPage() {
                         setOpenSection(null)
                       }}
                       style={{
-                        padding: '10px 2px',
+                        padding: '8px 2px',
                         borderRadius: '10px',
                         border: 'none',
                         cursor: 'pointer',
                         fontFamily: "'Nunito', sans-serif",
                         fontWeight: '700',
-                        fontSize: '11px',
+                        fontSize: '10px',
                         background: 'white',
                         color: section.textColor,
                         boxShadow: '0 1px 4px rgba(0,0,0,0.06)'
@@ -647,11 +656,11 @@ export default function CalculatorPage() {
             </div>
           ))}
 
-          {/* Basic Calculator Buttons - compact */}
+          {/* Basic Calculator Buttons - compact grid */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '5px',
+            gap: '4px',
             marginTop: '4px'
           }}>
             {buttons.map((btn, i) => (
@@ -662,16 +671,17 @@ export default function CalculatorPage() {
                 style={{
                   width: '100%',
                   aspectRatio: btn.wide ? 'auto' : '1',
-                  padding: btn.wide ? '12px' : undefined,
+                  height: btn.wide ? '44px' : undefined,
+                  padding: btn.wide ? '0' : undefined,
                   gridColumn: btn.wide ? 'span 2' : 'span 1',
-                  borderRadius: '14px',
+                  borderRadius: '12px',
                   border: 'none',
                   cursor: 'pointer',
                   fontFamily: "'Nunito', sans-serif",
                   fontWeight: '800',
                   fontSize: btn.type === 'number' 
-                    ? '18px' : '16px',
-                  background: 
+                    ? '16px' : '14px',
+                  background:
                     btn.type === 'number' ? 'white' :
                     btn.type === 'operator' ? '#E0F4FB' :
                     btn.type === 'equals' ? '#00A8D6' :
@@ -684,8 +694,8 @@ export default function CalculatorPage() {
                     btn.type === 'clear' ? '#FF4444' :
                     '#00A8D6',
                   boxShadow: btn.type === 'equals'
-                    ? '0 4px 12px rgba(0,168,214,0.3)'
-                    : '0 2px 6px rgba(0,168,214,0.08)'
+                    ? '0 3px 10px rgba(0,168,214,0.3)'
+                    : '0 1px 4px rgba(0,168,214,0.08)'
                 }}
               >
                 {btn.label}
