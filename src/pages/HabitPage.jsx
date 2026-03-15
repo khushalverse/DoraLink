@@ -1680,236 +1680,254 @@ NO markdown. SHORT responses only!`
 
           {/* AI COACH MODAL */}
           {showCoach && (
-              <div className="fixed inset-0 z-[80] bg-black/50 flex flex-col justify-end">
-                  <div style={{
-                    position: 'fixed',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    background: 'white',
-                    borderRadius: '28px 28px 0 0',
-                    zIndex: 50,
-                    maxHeight: '75vh',
+            <div className="fixed inset-0 z-[80] bg-black/50 flex flex-col justify-end">
+              <div style={{
+                position: 'fixed',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                background: 'white',
+                borderRadius: '28px 28px 0 0',
+                zIndex: 50,
+                maxHeight: '75vh',
+                display: 'flex',
+                flexDirection: 'column',
+                animation: 'slideInUp 0.3s ease',
+                boxShadow: '0 -8px 32px rgba(0,168,214,0.12)'
+              }}>
+                {/* 1. HANDLE BAR */}
+                <div style={{
+                  width: '36px',
+                  height: '4px',
+                  background: '#E0F4FB',
+                  borderRadius: '2px',
+                  margin: '12px auto 0 auto'
+                }}/>
+
+                {/* 2. HEADER */}
+                <div style={{
+                  padding: '12px 20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <h2 style={{
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    color: '#00A8D6',
                     display: 'flex',
-                    flexDirection: 'column',
-                    animation: 'slideInUp 0.3s ease',
-                    boxShadow: '0 -8px 32px rgba(0,168,214,0.12)'
-                  }}>
-                      <div className="flex justify-between items-center mb-4 shrink-0">
-                          <h2 className="text-[18px] font-bold text-[#00A8D6] flex items-center gap-2 opacity-100">🤖 DoraLink Coach</h2>
-                          <button onClick={() => {
-                              setShowCoach(false);
-                              setCoachMessage('');
-                              setCoachHistory([]);
-                              setCoachInput('');
-                          }} className="bg-gray-100 p-1.5 rounded-full text-gray-500 border-none transition-transform hover:scale-110"><X size={18}/></button>
-                      </div>
-                      
-                      {/* Single Chat Area - all messages here */}
-                        <div style={{
-                          flex: 1,
-                          overflowY: 'auto',
-                          padding: '0 16px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '10px',
-                          minHeight: '150px',
-                          maxHeight: '280px'
-                        }}>
-                        {/* Welcome message if no history */}
-                        {coachHistory.length === 0 && !coachMessage && (
-                          <div style={{
-                            background: 'linear-gradient(135deg, #E8F8FF, #D0F0FF)',
-                            border: '1px solid #B8E4F5',
-                            borderRadius: '18px 18px 18px 4px',
-                            padding: '14px 16px',
-                            fontFamily: "'Nunito', sans-serif",
-                            fontSize: '14px',
-                            color: '#1a1a1a',
-                            lineHeight: '1.6'
-                          }}>
-                            🤖 Main hun tera DoraLink Coach! 
-                            Apne habits ke baare mein kuch bhi 
-                            poochh — main sab jaanta hun! 😄
-                          </div>
-                        )}
+                    alignItems: 'center',
+                    gap: '8px',
+                    margin: 0
+                  }}>🤖 DoraLink Coach</h2>
+                  <button 
+                    onClick={() => {
+                      setShowCoach(false);
+                      setCoachMessage('');
+                      setCoachHistory([]);
+                      setCoachInput('');
+                    }}
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      background: '#F0F9FF',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#00A8D6',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <X size={18}/>
+                  </button>
+                </div>
 
-                        {/* Quick button response - show as AI message */}
-                        {coachMessage && coachHistory.length === 0 && (
-                          <div style={{
-                            background: 'linear-gradient(135deg, #E8F8FF, #D0F0FF)',
-                            border: '1px solid #B8E4F5',
-                            borderRadius: '18px 18px 18px 4px',
-                            padding: '14px 16px',
-                            fontFamily: "'Nunito', sans-serif",
-                            fontSize: '14px',
-                            color: '#1a1a1a',
-                            lineHeight: '1.6'
-                          }}>
-                            {coachLoading ? (
-                              <div style={{
-                                display: 'flex', gap: '4px'
-                              }}>
-                                {[0,1,2].map(i => (
-                                  <div key={i} style={{
-                                    width: '6px', height: '6px',
-                                    borderRadius: '50%',
-                                    background: '#00A8D6',
-                                    animation: 'typingDot 1.2s infinite',
-                                    animationDelay: `${i * 0.15}s`
-                                  }}/>
-                                ))}
-                              </div>
-                            ) : coachMessage}
-                          </div>
-                        )}
+                {/* 3. CHAT AREA */}
+                <div style={{
+                  padding: '0 16px',
+                  minHeight: '150px',
+                  maxHeight: '250px',
+                  overflowY: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px'
+                }}>
+                  {/* Welcome message if no history */}
+                  {coachHistory.length === 0 && !coachMessage && (
+                    <div style={{
+                      background: 'linear-gradient(135deg, #E8F8FF, #D0F0FF)',
+                      border: '1px solid #B8E4F5',
+                      borderRadius: '18px 18px 18px 4px',
+                      padding: '14px 16px',
+                      fontFamily: "'Nunito', sans-serif",
+                      fontSize: '14px',
+                      color: '#1a1a1a',
+                      lineHeight: '1.6'
+                    }}>
+                      🤖 Main hun tera DoraLink Coach! 
+                      Apne habits ke baare mein kuch bhi 
+                      poochh — main sab jaanta hun! 😄
+                    </div>
+                  )}
 
-                        {/* Chat history messages */}
-                        {coachHistory.map((msg, i) => (
-                          <div key={i} style={{
-                            display: 'flex',
-                            justifyContent: msg.role === 'user'
-                              ? 'flex-end' : 'flex-start'
-                          }}>
-                            <div style={{
-                              maxWidth: '85%',
-                              padding: '10px 14px',
-                              borderRadius: msg.role === 'user'
-                                ? '18px 18px 4px 18px'
-                                : '18px 18px 18px 4px',
-                              background: msg.role === 'user'
-                                ? '#00A8D6' : 'linear-gradient(135deg, #E8F8FF, #D0F0FF)',
-                              border: msg.role === 'user'
-                                ? 'none' : '1px solid #B8E4F5',
-                              padding: msg.role === 'user'
-                                ? '10px 14px' : '14px 16px',
-                              color: msg.role === 'user'
-                                ? 'white' : '#1a1a1a',
-                              fontFamily: "'Nunito', sans-serif",
-                              fontSize: '14px',
-                              lineHeight: '1.6'
-                            }}>
-                              {msg.content}
-                            </div>
-                          </div>
-                        ))}
+                  {/* Quick button response - show as AI message */}
+                  {coachMessage && coachHistory.length === 0 && (
+                    <div style={{
+                      background: 'linear-gradient(135deg, #E8F8FF, #D0F0FF)',
+                      border: '1px solid #B8E4F5',
+                      borderRadius: '18px 18px 18px 4px',
+                      padding: '14px 16px',
+                      fontFamily: "'Nunito', sans-serif",
+                      fontSize: '14px',
+                      color: '#1a1a1a',
+                      lineHeight: '1.6'
+                    }}>
+                      {coachLoading ? (
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          {[0,1,2].map(i => (
+                            <div key={i} style={{
+                              width: '6px', height: '6px',
+                              borderRadius: '50%',
+                              background: '#00A8D6',
+                              animation: 'typingDot 1.2s infinite',
+                              animationDelay: `${i * 0.15}s`
+                            }}/>
+                          ))}
+                        </div>
+                      ) : coachMessage}
+                    </div>
+                  )}
 
-                        {/* Loading dots in chat */}
-                        {coachLoading && coachHistory.length > 0 && (
-                          <div style={{
-                            display: 'flex',
-                            justifyContent: 'flex-start'
-                          }}>
-                            <div style={{
-                              padding: '10px 14px',
-                              background: '#E8F8FF',
-                              borderRadius: '18px 18px 18px 4px',
-                              display: 'flex',
-                              gap: '4px'
-                            }}>
-                              {[0,1,2].map(i => (
-                                <div key={i} style={{
-                                  width: '6px', height: '6px',
-                                  borderRadius: '50%',
-                                  background: '#00A8D6',
-                                  animation: 'typingDot 1.2s infinite',
-                                  animationDelay: `${i * 0.15}s`
-                                }}/>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Input Box */}
+                  {/* Chat history messages */}
+                  {coachHistory.map((msg, i) => (
+                    <div key={i} style={{
+                      display: 'flex',
+                      justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start'
+                    }}>
                       <div style={{
+                        maxWidth: '85%',
+                        padding: msg.role === 'user' ? '10px 14px' : '14px 16px',
+                        borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                        background: msg.role === 'user' ? '#00A8D6' : 'linear-gradient(135deg, #E8F8FF, #D0F0FF)',
+                        border: msg.role === 'user' ? 'none' : '1px solid #B8E4F5',
+                        color: msg.role === 'user' ? 'white' : '#1a1a1a',
+                        fontFamily: "'Nunito', sans-serif",
+                        fontSize: '14px',
+                        lineHeight: '1.6'
+                      }}>
+                        {msg.content}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Loading dots in chat */}
+                  {coachLoading && coachHistory.length > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                      <div style={{
+                        padding: '10px 14px',
+                        background: '#E8F8FF',
+                        borderRadius: '18px 18px 18px 4px',
                         display: 'flex',
-                        gap: '8px',
-                        padding: '8px 16px 24px 16px',
-                        alignItems: 'center'
+                        gap: '4px'
                       }}>
-                        <input
-                          value={coachInput}
-                          onChange={e => setCoachInput(e.target.value)}
-                          onKeyDown={e => {
-                            if(e.key === 'Enter' && coachInput.trim()) {
-                              askCoach(coachInput)
-                            }
-                          }}
-                          placeholder="Coach se kuch poochho..."
-                          style={{
-                            flex: 1,
-                            padding: '10px 14px',
-                            borderRadius: '20px',
-                            border: '1.5px solid #E0F4FB',
-                            fontFamily: "'Nunito', sans-serif",
-                            fontSize: '14px',
-                            outline: 'none',
-                            background: '#F8FDFF'
-                          }}
-                        />
-                        <button
-                          onClick={() => {
-                            if(coachInput.trim()) askCoach(coachInput)
-                          }}
-                          style={{
-                                width: '38px',
-                                height: '38px',
-                                borderRadius: '50%',
-                                background: coachInput.trim()
-                                  ? '#00A8D6' : '#E0F4FB',
-                                border: 'none',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0
-                              }}
-                            >
-                              <svg width="16" height="16" 
-                                viewBox="0 0 24 24" fill="none" 
-                                stroke={coachInput.trim() 
-                                  ? "white" : "#00A8D6"
-                                } strokeWidth="2.5">
-                                <line x1="12" y1="19" x2="12" y2="5"/>
-                                <polyline points="5 12 12 5 19 12"/>
-                              </svg>
-                            </button>
-                      </div>
-
-                      {/* Quick Action Buttons */}
-                      <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 1fr',
-                        gap: '8px',
-                        padding: '8px 16px'
-                      }}>
-                        {[
-                          {type:'analyze', label:'📊 Analyze my habits'},
-                          {type:'suggest', label:'💡 Suggest new habit'},
-                          {type:'streak', label:'🔥 Boost my streak'},
-                          {type:'struggling', label:'😔 I am struggling'}
-                        ].map(btn => (
-                          <button
-                            key={btn.type}
-                            onClick={() => getCoachAdvice(btn.type)}
-                            style={{
-                              padding: '10px 8px',
-                              background: 'white',
-                              border: '1.5px solid #E0F4FB',
-                              borderRadius: '12px',
-                              fontFamily: "'Nunito', sans-serif",
-                              fontWeight: '700',
-                              fontSize: '12px',
-                              color: '#00A8D6',
-                              cursor: 'pointer',
-                              textAlign: 'center'
-                            }}
-                          >{btn.label}</button>
+                        {[0,1,2].map(i => (
+                          <div key={i} style={{
+                            width: '6px', height: '6px',
+                            borderRadius: '50%',
+                            background: '#00A8D6',
+                            animation: 'typingDot 1.2s infinite',
+                            animationDelay: `${i * 0.15}s`
+                          }}/>
                         ))}
                       </div>
-                  </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 4. INPUT ROW */}
+                <div style={{
+                  padding: '8px 16px',
+                  display: 'flex',
+                  gap: '8px',
+                  alignItems: 'center'
+                }}>
+                  <input
+                    value={coachInput}
+                    onChange={e => setCoachInput(e.target.value)}
+                    onKeyDown={e => {
+                      if(e.key === 'Enter' && coachInput.trim()) askCoach(coachInput)
+                    }}
+                    placeholder="Coach se kuch poochho..."
+                    style={{
+                      flex: 1,
+                      padding: '10px 14px',
+                      borderRadius: '20px',
+                      border: '1.5px solid #E0F4FB',
+                      fontFamily: "'Nunito', sans-serif",
+                      fontSize: '14px',
+                      outline: 'none',
+                      background: '#F8FDFF'
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      if(coachInput.trim()) askCoach(coachInput)
+                    }}
+                    style={{
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '50%',
+                      background: coachInput.trim() ? '#00A8D6' : '#E0F4FB',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={coachInput.trim() ? "white" : "#00A8D6"} strokeWidth="2.5">
+                      <line x1="12" y1="19" x2="12" y2="5"/>
+                      <polyline points="5 12 12 5 19 12"/>
+                    </svg>
+                  </button>
+                </div>
+
+                {/* 5. QUICK BUTTONS GRID */}
+                <div style={{
+                  padding: '8px 16px 20px 16px',
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '8px'
+                }}>
+                  {[
+                    {type:'analyze', label:'📊 Analyze my habits'},
+                    {type:'suggest', label:'💡 Suggest new habit'},
+                    {type:'streak', label:'🔥 Boost my streak'},
+                    {type:'struggling', label:'😔 I am struggling'}
+                  ].map(btn => (
+                    <button
+                      key={btn.type}
+                      onClick={() => getCoachAdvice(btn.type)}
+                      style={{
+                        padding: '10px 8px',
+                        background: 'white',
+                        border: '1.5px solid #E0F4FB',
+                        borderRadius: '12px',
+                        fontFamily: "'Nunito', sans-serif",
+                        fontWeight: '700',
+                        fontSize: '12px',
+                        color: '#00A8D6',
+                        cursor: 'pointer',
+                        textAlign: 'center'
+                      }}
+                    >{btn.label}</button>
+                  ))}
+                </div>
               </div>
+            </div>
           )}
 
       </div>
