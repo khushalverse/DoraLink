@@ -521,6 +521,40 @@ export default function ChatPage() {
             </button>
             <div className="my-4 border-t border-gray-100" />
             <div className="space-y-1 mb-6">
+              {/* Habit Tracker */}
+              <button
+                onClick={() => {
+                  window.location.href = '/habits'
+                  setIsSidebarOpen(false)
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 12px',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderRadius: '10px',
+                  transition: 'background 0.2s'
+                }}
+                onMouseEnter={e => 
+                  e.currentTarget.style.background='#F0F9FF'
+                }
+                onMouseLeave={e => 
+                  e.currentTarget.style.background='none'
+                }
+              >
+                <span style={{fontSize: '18px'}}>📊</span>
+                <span style={{
+                  fontFamily: "'Nunito', sans-serif",
+                  fontWeight: '700',
+                  fontSize: '15px',
+                  color: '#1a1a1a'
+                }}>Habit Tracker</span>
+              </button>
+
               {/* Gadgets Section */}
               <div>
                 <button
