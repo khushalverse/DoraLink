@@ -1461,21 +1461,33 @@ NO markdown bold/italic in responses.`
           position: 'fixed',
           top: '12px',
           right: '16px',
-          width: '52px',
-          height: '52px',
+          width: '46px',
+          height: '46px',
           borderRadius: '50%',
-          background: 'linear-gradient(135deg, #00A8D6, #0078B8)',
-          border: 'none',
+          background: 'linear-gradient(135deg, #00A8D6 0%, #0078B8 100%)',
+          border: '2.5px solid white',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 4px 16px rgba(0,168,214,0.4)',
-          animation: 'float 3s ease-in-out infinite',
+          boxShadow: '0 4px 16px rgba(0,168,214,0.5), 0 0 0 3px rgba(0,168,214,0.15)',
           zIndex: 20,
-          fontSize: '24px'
+          fontSize: '20px',
+          transition: 'transform 0.2s ease, box-shadow 0.2s ease'
         }}
-      >🤖</button>
+        onMouseEnter={e => {
+          e.currentTarget.style.transform = 'scale(1.1)'
+          e.currentTarget.style.boxShadow = 
+            '0 6px 20px rgba(0,168,214,0.6), 0 0 0 4px rgba(0,168,214,0.2)'
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.transform = 'scale(1)'
+          e.currentTarget.style.boxShadow = 
+            '0 4px 16px rgba(0,168,214,0.5), 0 0 0 3px rgba(0,168,214,0.15)'
+        }}
+      >
+        🤖
+      </button>
 
       {showAI && (
         <>
