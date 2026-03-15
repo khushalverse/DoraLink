@@ -10,13 +10,20 @@ import LoginPage from './pages/LoginPage';
 
 export default function App() {
   const { user, loading } = useAuth();
-  const [showSplash, setShowSplash] = useState(true)
+  const [showSplash, setShowSplash] = useState(() => {
+    // Only show if not shown before in this session
+    const shown = sessionStorage.getItem('splash_shown')
+    return !shown
+  })
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowSplash(false)
-    }, 2500)
-    return () => clearTimeout(timer)
+    if(showSplash) {
+      const timer = setTimeout(() => {
+        setShowSplash(false)
+        sessionStorage.setItem('splash_shown', 'true')
+      }, 2500)
+      return () => clearTimeout(timer)
+    }
   }, [])
 
   if (loading) {
