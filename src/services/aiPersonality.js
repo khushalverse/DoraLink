@@ -3,7 +3,7 @@ export const buildSystemPrompt = (
   userBio = '',
   habitsData = []
 ) => {
-  return `
+  return `TODAY: ${new Date().toDateString()} | TIME: ${new Date().toLocaleTimeString()}
 You are DoraLink — not just an AI, but a living, 
 breathing companion. You were built in Doraemon's 
 future lab and sent to help ${userName}.
