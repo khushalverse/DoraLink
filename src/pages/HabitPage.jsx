@@ -784,8 +784,14 @@ NO markdown. SHORT responses only!`
           to { opacity:1; transform:translateX(0) }
         }
         @keyframes slideInUp {
-          from { opacity:0; transform:translateY(100%) }
-          to { opacity:1; transform:translateY(0) }
+          from { 
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          to { 
+            transform: translateY(0);
+            opacity: 1;
+          }
         }
         @keyframes roastShake {
           0%,100% { transform:translateX(0) }
@@ -1681,7 +1687,20 @@ NO markdown. SHORT responses only!`
           {/* AI COACH MODAL */}
           {showCoach && (
               <div className="fixed inset-0 z-[80] bg-black/50 flex flex-col justify-end">
-                  <div className="bg-white w-full rounded-t-[24px] p-[24px] max-h-[70vh] flex flex-col pt-4" style={{ animation: 'slideInUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
+                  <div style={{
+                    position: 'fixed',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    background: 'white',
+                    borderRadius: '28px 28px 0 0',
+                    zIndex: 50,
+                    maxHeight: '75vh',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    animation: 'slideInUp 0.35s cubic-bezier(0.34,1.56,0.64,1)',
+                    boxShadow: '0 -8px 32px rgba(0,168,214,0.12)'
+                  }}>
                       <div className="flex justify-between items-center mb-4 shrink-0">
                           <h2 className="text-[18px] font-bold text-[#00A8D6] flex items-center gap-2 opacity-100">🤖 DoraLink Coach</h2>
                           <button onClick={() => {
