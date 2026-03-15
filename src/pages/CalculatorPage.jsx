@@ -1459,7 +1459,7 @@ NO markdown bold/italic in responses.`
         onClick={() => setShowAI(true)}
         style={{
           position: 'fixed',
-          bottom: '90px',
+          top: '12px',
           right: '16px',
           width: '52px',
           height: '52px',
