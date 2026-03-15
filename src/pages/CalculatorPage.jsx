@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { ArrowLeft, Delete } from 'lucide-react'
 
 export default function CalculatorPage() {
-  const [expression, setExpression] = useState('')
+  const [firstNum, setFirstNum] = useState('')
+  const [operator, setOperator] = useState('')
   const [display, setDisplay] = useState('0')
+  const [expression, setExpression] = useState('')
   const [calculated, setCalculated] = useState(false)
   const [history, setHistory] = useState([])
   const [activeMode, setActiveMode] = useState('basic')
@@ -14,6 +16,8 @@ export default function CalculatorPage() {
 
     if(value === 'C') {
       setDisplay('0')
+      setFirstNum('')
+      setOperator('')
       setExpression('')
       setCalculated(false)
       return
@@ -28,25 +32,76 @@ export default function CalculatorPage() {
       return
     }
 
-    if(value === '=') {
-      calculate()
-      return
-    }
-
     if(value === '±') {
-      setDisplay(prev => 
-        prev.startsWith('-') 
-          ? prev.slice(1) 
-          : '-' + prev
+      setDisplay(prev =>
+        prev.startsWith('-')
+          ? prev.slice(1)
+          : prev === '0' ? '0' : '-' + prev
       )
       return
     }
 
     const operators = ['+','-','×','÷','%']
-    
+
     if(operators.includes(value)) {
-      setExpression(display + ' ' + value + ' ')
+      setFirstNum(display)
+      setOperator(value)
+      setExpression(display + ' ' + value)
+      setDisplay('0')
       setCalculated(false)
+      return
+    }
+
+    if(value === '=') {
+      if(!firstNum || !operator) return
+      try {
+        const num1 = parseFloat(firstNum)
+        const num2 = parseFloat(display)
+
+        if(isNaN(num1) || isNaN(num2)) {
+          setError('Galat input! 😅')
+          return
+        }
+
+        let result
+        switch(operator) {
+          case '+': result = num1 + num2; break
+          case '-': result = num1 - num2; break
+          case '×': result = num1 * num2; break
+          case '÷':
+            if(num2 === 0) {
+              setError('Zero se divide nahi! 😅')
+              return
+            }
+            result = num1 / num2
+            break
+          case '%': result = num1 * num2 / 100; break
+          default: return
+        }
+
+        result = parseFloat(result.toFixed(10))
+        if(Math.abs(result) > 1e15) {
+          result = result.toExponential(4)
+        }
+
+        const historyItem = {
+          expression: firstNum + ' ' + operator + ' ' + display,
+          result: result.toString()
+        }
+        setHistory(prev => 
+          [historyItem, ...prev.slice(0,4)]
+        )
+        setExpression(
+          firstNum + ' ' + operator + 
+          ' ' + display + ' ='
+        )
+        setDisplay(result.toString())
+        setFirstNum('')
+        setOperator('')
+        setCalculated(true)
+      } catch(err) {
+        setError('Kuch gadbad! 😅')
+      }
       return
     }
 
@@ -56,6 +111,7 @@ export default function CalculatorPage() {
       return
     }
 
+    // Number input
     if(calculated) {
       setDisplay(value)
       setCalculated(false)
@@ -65,57 +121,8 @@ export default function CalculatorPage() {
     if(display === '0') {
       setDisplay(value)
     } else {
-      if(display.length >= 15) return
+      if(display.length >= 12) return
       setDisplay(prev => prev + value)
-    }
-  }
-
-  const calculate = () => {
-    try {
-      if(!expression) return
-      
-      const parts = expression.trim().split(' ')
-      const num1 = parseFloat(parts[0])
-      const operator = parts[1]
-      const num2 = parseFloat(display)
-
-      if(isNaN(num1) || isNaN(num2)) {
-        setError('Galat input hai! 😅')
-        return
-      }
-
-      let result
-      switch(operator) {
-        case '+': result = num1 + num2; break
-        case '-': result = num1 - num2; break
-        case '×': result = num1 * num2; break
-        case '÷':
-          if(num2 === 0) {
-            setError('Zero se divide? Nahi bhai! 😅')
-            return
-          }
-          result = num1 / num2
-          break
-        case '%': result = num1 * num2 / 100; break
-        default: return
-      }
-
-      // Handle floating point precision
-      result = parseFloat(result.toFixed(10))
-      if(result > 1e15 || result < -1e15) {
-        result = result.toExponential(4)
-      }
-
-      const historyItem = {
-        expression: expression + display,
-        result: result.toString()
-      }
-      setHistory(prev => [historyItem, ...prev.slice(0,4)])
-      setDisplay(result.toString())
-      setExpression(expression + display + ' =')
-      setCalculated(true)
-    } catch(err) {
-      setError('Kuch gadbad ho gayi! 😅')
     }
   }
 
@@ -136,21 +143,39 @@ export default function CalculatorPage() {
     }
     switch(type) {
       case 'number':
-        return { ...base, background: 'white', color: '#1a1a1a',
-          boxShadow: '0 2px 8px rgba(0,168,214,0.08)' }
+        return { ...base, 
+          background: 'white', 
+          color: '#1a1a1a',
+          fontSize: '24px',
+          boxShadow: '0 2px 8px rgba(0,168,214,0.08)' 
+        }
       case 'operator':
-        return { ...base, background: '#E0F4FB', color: '#00A8D6',
-          boxShadow: '0 2px 8px rgba(0,168,214,0.12)' }
+        return { ...base, 
+          background: '#E0F4FB', 
+          color: '#00A8D6',
+          fontSize: '26px',
+          boxShadow: '0 2px 8px rgba(0,168,214,0.12)' 
+        }
       case 'equals':
-        return { ...base, background: '#00A8D6', color: 'white',
-          boxShadow: '0 4px 16px rgba(0,168,214,0.3)',
-          fontSize: '24px' }
+        return { ...base, 
+          background: '#00A8D6', 
+          color: 'white',
+          fontSize: '28px',
+          boxShadow: '0 4px 16px rgba(0,168,214,0.3)' 
+        }
       case 'clear':
-        return { ...base, background: '#FFE0E0', color: '#FF4444',
-          boxShadow: '0 2px 8px rgba(255,68,68,0.12)' }
+        return { ...base, 
+          background: '#FFE0E0', 
+          color: '#FF4444',
+          fontSize: '22px',
+          boxShadow: '0 2px 8px rgba(255,68,68,0.12)' 
+        }
       case 'special':
-        return { ...base, background: '#F0F9FF', color: '#00A8D6',
-          fontSize: '16px' }
+        return { ...base, 
+          background: '#F0F9FF', 
+          color: '#00A8D6',
+          fontSize: '20px'
+        }
       default:
         return base
     }
