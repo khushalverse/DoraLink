@@ -1644,10 +1644,38 @@ NO markdown. SHORT responses only!`
           )}
 
           {/* AI COACH BUTTON */}
-          <button onClick={() => setShowCoach(true)}
-              className="fixed bottom-[90px] right-[16px] z-40 w-[52px] h-[52px] bg-[#00A8D6] rounded-full flex items-center justify-center text-[24px]"
-              style={{ boxShadow: '0 4px 16px rgba(0,168,214,0.4)', animation: 'float 3s ease-in-out infinite' }}>
-              🤖
+          <button
+            onClick={() => setShowCoach(true)}
+            style={{
+              position: 'fixed',
+              top: '12px',
+              right: '16px',
+              width: '46px',
+              height: '46px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #00A8D6 0%, #0078B8 100%)',
+              border: '2.5px solid white',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 16px rgba(0,168,214,0.5), 0 0 0 3px rgba(0,168,214,0.15)',
+              zIndex: 20,
+              fontSize: '20px',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.transform = 'scale(1.1)'
+              e.currentTarget.style.boxShadow = 
+                '0 6px 20px rgba(0,168,214,0.6), 0 0 0 4px rgba(0,168,214,0.2)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.transform = 'scale(1)'
+              e.currentTarget.style.boxShadow = 
+                '0 4px 16px rgba(0,168,214,0.5), 0 0 0 3px rgba(0,168,214,0.15)'
+            }}
+          >
+            🤖
           </button>
 
           {/* AI COACH MODAL */}
