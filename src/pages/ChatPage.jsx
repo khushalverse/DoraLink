@@ -80,6 +80,11 @@ export default function ChatPage() {
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const settingsRef = useRef(null);
 
+  const [darkMode, setDarkMode] = useState(
+    localStorage.getItem('doralink_theme') === 'dark'
+  )
+  const [showAbout, setShowAbout] = useState(false)
+
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [customApiKey, setCustomApiKey] = useState(
     localStorage.getItem('doralink_custom_key') || ''
@@ -1022,21 +1027,33 @@ export default function ChatPage() {
                     {/* Menu items */}
                     {[
                       { 
-                        icon:'🎨', 
-                        label:'Theme', 
-                        sub:'Blue & White',
-                        onClick: () => {}
+                        icon: '🎨', 
+                        label: 'Theme',
+                        sub: darkMode ? 'Dark Mode' : 'Blue & White',
+                        onClick: () => {
+                          const newMode = !darkMode
+                          setDarkMode(newMode)
+                          localStorage.setItem(
+                            'doralink_theme',
+                            newMode ? 'dark' : 'light'
+                          )
+                          // Simple theme toggle
+                          document.body.style.background = newMode
+                            ? '#0a0a0a' : '#F0F9FF'
+                        }
                       },
                       { 
-                        icon:'🔑', 
-                        label:'API Key', 
-                        sub:'Manage your key',
+                        icon: '🔑', 
+                        label: 'API Key', 
+                        sub: localStorage.getItem('doralink_custom_key')
+                          ? 'Custom key active ✅'
+                          : 'Manage your key',
                         onClick: () => setShowApiKeyModal(true)
                       },
                       { 
-                        icon:'📊', 
-                        label:'Habit Tracker', 
-                        sub:'Track your habits',
+                        icon: '📊', 
+                        label: 'Habit Tracker', 
+                        sub: 'Track your habits',
                         onClick: () => {
                           window.location.href = '/habits'
                           setShowSettingsMenu(false)
@@ -1052,10 +1069,13 @@ export default function ChatPage() {
                         }
                       },
                       { 
-                        icon:'ℹ️', 
-                        label:'About DoraLink', 
-                        sub:'Version 1.0',
-                        onClick: () => {}
+                        icon: 'ℹ️', 
+                        label: 'About DoraLink', 
+                        sub: 'Version 1.0',
+                        onClick: () => {
+                          setShowAbout(true)
+                          setShowSettingsMenu(false)
+                        }
                       },
                     ].map((item, i) => (
                       <button key={i}
@@ -1697,9 +1717,16 @@ export default function ChatPage() {
               />
               <button
                 onClick={() => {
-                  localStorage.setItem(
-                    'doralink_custom_key', 
-                    customApiKey)
+                  if(customApiKey.trim()) {
+                    localStorage.setItem(
+                      'doralink_custom_key',
+                      customApiKey.trim()
+                    )
+                    alert('API Key saved! ✅')
+                  } else {
+                    localStorage.removeItem('doralink_custom_key')
+                    alert('API Key removed!')
+                  }
                   setShowApiKeyModal(false)
                 }}
                 style={{
@@ -1814,6 +1841,102 @@ export default function ChatPage() {
                   cursor: 'pointer'
                 }}
               >Abhi Nahi</button>
+            </div>
+          </div>
+        )}
+
+        {showAbout && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px'
+          }}>
+            <div style={{
+              background: 'white',
+              borderRadius: '28px',
+              padding: '28px 24px',
+              width: '100%',
+              maxWidth: '320px',
+              textAlign: 'center',
+              animation: 'popIn 0.3s ease'
+            }}>
+              <img 
+                src="/dora-avatar.png"
+                style={{
+                  width: '80px',
+                  height: '80px',
+                  borderRadius: '50%',
+                  marginBottom: '12px',
+                  objectFit: 'cover'
+                }}
+              />
+              <h2 style={{
+                fontFamily: "'Nunito', sans-serif",
+                fontWeight: '800',
+                fontSize: '22px',
+                color: '#00A8D6',
+                marginBottom: '4px'
+              }}>DoraLink</h2>
+              <p style={{
+                fontSize: '13px',
+                color: '#9ca3af',
+                fontFamily: "'Nunito', sans-serif",
+                marginBottom: '16px'
+              }}>Version 1.0.0</p>
+
+              <div style={{
+                background: '#F0F9FF',
+                borderRadius: '16px',
+                padding: '16px',
+                marginBottom: '16px',
+                textAlign: 'left'
+              }}>
+                {[
+                  {icon:'🤖', text:'Powered by Gemini AI'},
+                  {icon:'💙', text:'Made with love'},
+                  {icon:'👨‍💻', text:'By Khushal Prajapat'},
+                  {icon:'🚀', text:'Built from scratch'},
+                  {icon:'🎯', text:'AI + Habits + Gadgets'},
+                ].map((item, i) => (
+                  <div key={i} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    marginBottom: i < 4 ? '10px' : '0'
+                  }}>
+                    <span style={{fontSize: '18px'}}>
+                      {item.icon}
+                    </span>
+                    <span style={{
+                      fontFamily: "'Nunito', sans-serif",
+                      fontWeight: '600',
+                      fontSize: '14px',
+                      color: '#1a1a1a'
+                    }}>{item.text}</span>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setShowAbout(false)}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  background: '#00A8D6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '50px',
+                  fontFamily: "'Nunito', sans-serif",
+                  fontWeight: '800',
+                  fontSize: '15px',
+                  cursor: 'pointer'
+                }}
+              >Close</button>
             </div>
           </div>
         )}
