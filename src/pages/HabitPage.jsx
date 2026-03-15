@@ -177,11 +177,15 @@ export default function HabitPage() {
     let check = new Date()
     check.setHours(0, 0, 0, 0)
     
-    while(true) {
+    for(let i = 0; i < 365; i++) {
       const checkStr = check.toDateString()
-      const found = dates.some(d => 
-        new Date(d).toDateString() === checkStr
-      )
+      const found = dates.some(d => {
+        try {
+          return new Date(d).toDateString() === checkStr
+        } catch(e) {
+          return d === checkStr
+        }
+      })
       if(found) {
         streak++
         check.setDate(check.getDate() - 1)
@@ -193,11 +197,18 @@ export default function HabitPage() {
   }
 
   const isCompletedToday = (habit) => {
-    if(!habit.completedDates) return false;
     const today = new Date().toDateString()
-    return habit.completedDates.some(d => 
-      new Date(d).toDateString() === today
-    )
+    if(!habit.completedDates || 
+       habit.completedDates.length === 0) {
+      return false
+    }
+    return habit.completedDates.some(d => {
+      try {
+        return new Date(d).toDateString() === today
+      } catch(e) {
+        return d === today
+      }
+    })
   }
 
   const toggleComplete = (id) => {
@@ -596,38 +607,42 @@ NO markdown. SHORT responses only!`
 
   // Week Progress Chart Logic
   const getWeekData = () => {
-    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
     const today = new Date()
+    const currentDay = today.getDay()
     
-    return days.map((day, index) => {
+    return ['Sun','Mon','Tue','Wed',
+            'Thu','Fri','Sat'].map((day, index) => {
       const date = new Date(today)
-      // Get date for each day of current week
-      const currentDay = today.getDay()
       const diff = index - currentDay
       date.setDate(today.getDate() + diff)
       date.setHours(0, 0, 0, 0)
+      
       const dateStr = date.toDateString()
+      const isFuture = date > today
+      const isToday = index === currentDay
       
-      const activeHabits = habits.filter(h => !h.isPaused)
-      if(activeHabits.length === 0) return { day, pct: 0, isToday: index === currentDay, isFuture: date > today, date }
-      
-      const completed = activeHabits.filter(h =>
-        h.completedDates.some(d =>
-          new Date(d).toDateString() === dateStr
-        )
-      ).length
-      
-      const pct = Math.round(
-        (completed / activeHabits.length) * 100
+      const activeHabits = habits.filter(
+        h => !h.isPaused
       )
       
-      return { 
-        day, 
-        pct, 
-        isToday: index === currentDay,
-        isFuture: date > today,
-        date
+      let pct = 0
+      if(!isFuture && activeHabits.length > 0) {
+        const completed = activeHabits.filter(h => {
+          if(!h.completedDates) return false
+          return h.completedDates.some(d => {
+            try {
+              return new Date(d).toDateString() === dateStr
+            } catch(e) {
+              return d === dateStr
+            }
+          })
+        }).length
+        pct = Math.round(
+          (completed / activeHabits.length) * 100
+        )
       }
+      
+      return { day, pct, isToday, isFuture, date }
     })
   }
 
@@ -639,44 +654,52 @@ NO markdown. SHORT responses only!`
     const year = today.getFullYear()
     const month = today.getMonth()
     
-    // First day of month
     const firstDay = new Date(year, month, 1)
-    // Last day of month  
     const lastDay = new Date(year, month + 1, 0)
-    
     const days = []
     
-    // Empty cells before first day
     for(let i = 0; i < firstDay.getDay(); i++) {
       days.push(null)
     }
     
-    // All days of month
     for(let d = 1; d <= lastDay.getDate(); d++) {
       const date = new Date(year, month, d)
+      date.setHours(0, 0, 0, 0)
       const dateStr = date.toDateString()
-      const isToday = date.toDateString() === today.toDateString()
+      const isToday = dateStr === today.toDateString()
       const isFuture = date > today
       
-      const activeHabits = habits.filter(h => !h.isPaused)
-      
+      const activeHabits = habits.filter(
+        h => !h.isPaused
+      )
       let pct = 0
+      
       if(!isFuture && activeHabits.length > 0) {
-        const completed = activeHabits.filter(h =>
-          h.completedDates.some(dd =>
-            new Date(dd).toDateString() === dateStr
-          )
-        ).length
+        const completed = activeHabits.filter(h => {
+          if(!h.completedDates) return false
+          return h.completedDates.some(dd => {
+            try {
+              return new Date(dd).toDateString() === dateStr
+            } catch(e) {
+              return dd === dateStr
+            }
+          })
+        }).length
         pct = Math.round(
           (completed / activeHabits.length) * 100
         )
       }
       
-      const completedCount = activeHabits.length > 0 ? activeHabits.filter(h =>
-        h.completedDates.some(dd =>
-          new Date(dd).toDateString() === dateStr
-        )
-      ).length : 0;
+      const completedCount = activeHabits.length > 0 ? activeHabits.filter(h => {
+        if(!h.completedDates) return false
+        return h.completedDates.some(dd => {
+          try {
+            return new Date(dd).toDateString() === dateStr
+          } catch(e) {
+            return dd === dateStr
+          }
+        })
+      }).length : 0;
       
       days.push({ date: d, pct, isToday, isFuture, fullDate: date, completedCount })
     }
@@ -1031,14 +1054,14 @@ NO markdown. SHORT responses only!`
                     ) : (
                         <div className="space-y-2.5">
                             {filteredHabits.filter(h => !h.isPaused && isHabitActiveToday(h)).map((habit, idx) => {
-                                const checked = isCompletedToday(habit);
+                                const completed = isCompletedToday(habit);
                                 return (
                                 <div key={habit.id} 
                                    className="bg-white rounded-[16px] p-[14px_16px] shadow-[0_2px_8px_rgba(0,168,214,0.08)] mb-[10px] transform hover:scale-[1.01] transition-transform duration-200 relative overflow-hidden"
                                    style={{ 
                                        animation: `fadeUp 0.3s ease ${idx * 0.05}s both`,
                                        opacity: habit.isPaused ? 0.55 : 1,
-                                       backgroundColor: checked && !habit.isPaused ? '#E8F8FF' : 'white'
+                                       backgroundColor: completed && !habit.isPaused ? '#E8F8FF' : 'white'
                                    }}>
                                    {habit.isPaused && (
                                        <div className="absolute top-2 right-2 bg-orange-100 text-[#FF6B35] font-bold text-[10px] px-2 py-0.5 rounded-full z-10">⏸ Paused</div>
@@ -1049,21 +1072,21 @@ NO markdown. SHORT responses only!`
                                         <button onClick={() => toggleComplete(habit.id)} disabled={habit.isPaused}
                                             style={{
                                                 width: '36px', height: '36px', borderRadius: '50%',
-                                                border: checked ? 'none' : `2px solid ${habit.color}`,
-                                                backgroundColor: checked ? habit.color : 'transparent',
+                                                border: completed ? 'none' : `2px solid ${habit.color}`,
+                                                backgroundColor: completed ? habit.color : 'transparent',
                                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                 flexShrink: 0, transition: 'all 0.2s ease',
-                                                animation: checked ? 'checkBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' : 'none',
+                                                animation: completed ? 'checkBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' : 'none',
                                                 marginTop: '2px'
                                             }}
                                         >
-                                            {checked && <Check size={20} color="white" />}
+                                            {completed && <Check size={20} color="white" />}
                                         </button>
 
                                         {/* Middle Details */}
                                         <div className="flex-1 ml-[12px] min-w-0">
                                             <h3 className="text-[15px] font-[700] truncate leading-tight mb-1"
-                                                style={{ color: checked ? '#9ca3af' : '#1a1a1a', textDecoration: checked ? 'line-through' : 'none' }}>
+                                                style={{ color: completed ? '#9ca3af' : '#1a1a1a', textDecoration: completed ? 'line-through' : 'none' }}>
                                                 {habit.emoji} {habit.name}
                                             </h3>
                                             <div className="flex flex-wrap items-center gap-[6px] mb-0.5 mt-[2px]">
