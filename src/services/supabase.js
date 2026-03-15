@@ -137,7 +137,9 @@ export const saveHabitToDb = async (userId, habit) => {
       total_completions: habit.totalCompletions || 0,
       completed_dates: habit.completedDates || [],
       is_paused: habit.isPaused || false,
-      notes: habit.notes || ''
+      notes: habit.notes || '',
+      frequency: habit.frequency || 'daily',
+      specific_days: habit.specificDays || [0,1,2,3,4,5,6]
     })
     .select()
     .single()
@@ -158,7 +160,9 @@ export const updateHabitInDb = async (habitId, updates) => {
       total_completions: updates.totalCompletions,
       completed_dates: updates.completedDates,
       is_paused: updates.isPaused,
-      notes: updates.notes
+      notes: updates.notes,
+      frequency: updates.frequency || 'daily',
+      specific_days: updates.specificDays || [0,1,2,3,4,5,6]
     })
     .eq('id', habitId)
     .select()

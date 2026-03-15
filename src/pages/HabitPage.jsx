@@ -24,9 +24,14 @@ export default function HabitPage() {
   const [showEmojiGrid, setShowEmojiGrid] = useState(false);
   
   const [newHabit, setNewHabit] = useState({
-    name: '', emoji: '💪', category: 'Health 🏥', 
-    color: '#00A8D6', notes: '', chainedTo: null
-  });
+    name: '',
+    emoji: '💪',
+    category: 'Health 🏥',
+    color: '#00A8D6',
+    notes: '',
+    frequency: 'daily',
+    specificDays: [0,1,2,3,4,5,6]
+  })
   const [editingNotes, setEditingNotes] = useState('');
   
   const [xp, setXp] = useState(() => parseInt(localStorage.getItem('doralink_xp') || '0'));
@@ -243,27 +248,33 @@ export default function HabitPage() {
         bestStreak: 0,
         totalCompletions: 0,
         completedDates: [],
-        isPaused: false
+        isPaused: false,
+        frequency: newHabit.frequency,
+        specificDays: newHabit.specificDays
       })
       const formatted = {
         id: saved.id,
         name: saved.name,
-        emoji: saved.emoji,
-        category: saved.category,
-        color: saved.color,
-        streak: saved.streak,
-        bestStreak: saved.best_streak,
-        totalCompletions: saved.total_completions,
+        emoji: saved.emoji || '💪',
+        category: saved.category || 'Health',
+        color: saved.color || '#00A8D6',
+        streak: saved.streak || 0,
+        bestStreak: saved.best_streak || 0,
+        totalCompletions: saved.total_completions || 0,
         completedDates: saved.completed_dates || [],
-        isPaused: saved.is_paused,
-        notes: saved.notes,
+        isPaused: saved.is_paused || false,
+        notes: saved.notes || '',
+        frequency: saved.frequency || 'daily',
+        specificDays: saved.specific_days || [0,1,2,3,4,5,6],
         createdAt: saved.created_at
       }
       setHabits(prev => [formatted, ...prev])
       setNewHabit({ 
         name:'', emoji:'💪', 
         category:'Health 🏥', 
-        color:'#00A8D6', notes:'', chainedTo: null
+        color:'#00A8D6', notes:'', 
+        frequency: 'daily',
+        specificDays: [0,1,2,3,4,5,6]
       })
       setShowEmojiGrid(false);
       setShowAddModal(false)
@@ -465,6 +476,17 @@ Hinglish, warm, friendly. No markdown.`
       "Your habits called. They said they miss you 😢"
   ];
   
+  const isHabitActiveToday = (habit) => {
+    if(habit.frequency === 'always') return true
+    if(habit.frequency === 'daily') return true
+    if(habit.frequency === 'specific') {
+      const today = new Date().getDay()
+      const days = habit.specificDays || [0,1,2,3,4,5,6]
+      return days.includes(today)
+    }
+    return true
+  }
+
   const showRoastCard = roastMode && !hideRoastToday && habits.length > 0 && habits.filter(h => isCompletedToday(h)).length === 0 && new Date().getHours() >= 12;
   const currentRoast = React.useMemo(() => roasts[Math.floor(Math.random() * roasts.length)], [showRoastCard]);
 
@@ -915,7 +937,7 @@ Hinglish, warm, friendly. No markdown.`
                         </div>
                     ) : (
                         <div className="space-y-2.5">
-                            {filteredHabits.map((habit, idx) => {
+                            {filteredHabits.filter(h => !h.isPaused && isHabitActiveToday(h)).map((habit, idx) => {
                                 const checked = isCompletedToday(habit);
                                 return (
                                 <div key={habit.id} 
@@ -1005,6 +1027,73 @@ Hinglish, warm, friendly. No markdown.`
                                    </div>
                                 </div>
                             )})}
+                            
+                            {habits.filter(h => !h.isPaused && !isHabitActiveToday(h)).length > 0 && (
+                                <p style={{
+                                  fontFamily: "'Nunito', sans-serif",
+                                  fontSize: '13px',
+                                  color: '#9ca3af',
+                                  textAlign: 'center',
+                                  padding: '8px'
+                                }}>
+                                  {habits.filter(h => !h.isPaused && !isHabitActiveToday(h)).length} habit(s) not scheduled today
+                                </p>
+                            )}
+
+                            {habits.filter(h => h.isPaused).length > 0 && (
+                                <div className="mt-6">
+                                    <h3 className="text-[14px] font-bold text-gray-400 mb-3 px-1 uppercase tracking-wider">Paused Habits</h3>
+                                    {habits.filter(h => h.isPaused).map((habit, idx) => {
+                                        const checked = isCompletedToday(habit);
+                                        return (
+                                        <div key={habit.id} 
+                                           className="bg-white rounded-[16px] p-[14px_16px] shadow-[0_2px_8px_rgba(0,168,214,0.08)] mb-[10px] transform hover:scale-[1.01] transition-transform duration-200 relative overflow-hidden"
+                                           style={{ 
+                                               opacity: 0.55,
+                                               backgroundColor: 'white'
+                                           }}>
+                                           <div className="absolute top-2 right-2 bg-orange-100 text-[#FF6B35] font-bold text-[10px] px-2 py-0.5 rounded-full z-10">⏸ Paused</div>
+                                           
+                                           <div className="flex items-start">
+                                                {/* Checkbox */}
+                                                <button disabled
+                                                    style={{
+                                                        width: '36px', height: '36px', borderRadius: '50%',
+                                                        border: `2px solid ${habit.color}`,
+                                                        backgroundColor: 'transparent',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        flexShrink: 0,
+                                                        marginTop: '2px'
+                                                    }}
+                                                >
+                                                    {checked && <Check size={20} color="white" />}
+                                                </button>
+
+                                                {/* Middle Details */}
+                                                <div className="flex-1 ml-[12px] min-w-0">
+                                                    <h3 className="text-[15px] font-[700] truncate leading-tight mb-1 text-gray-400">
+                                                        {habit.emoji} {habit.name}
+                                                    </h3>
+                                                    <div className="flex flex-wrap items-center gap-[6px] mb-0.5 mt-[2px]">
+                                                        <span className="text-[11px] px-[8px] py-[2px] rounded-full"
+                                                            style={{ backgroundColor: `${habit.color}20`, color: habit.color }}>
+                                                            {habit.category.split(' ')[0]}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Actions */}
+                                                <div className="flex items-center gap-[2px] ml-2">
+                                                    <button onClick={() => togglePause(habit.id)} className="p-1.5 text-[#9ca3af] hover:text-orange-500 transition-colors">
+                                                        <PlayCircle size={18}/>
+                                                    </button>
+                                                    <button onClick={() => deleteHabit(habit.id)} className="p-1.5 text-[#9ca3af] hover:text-[#FF6B6B] transition-colors"><Trash2 size={18}/></button>
+                                                </div>
+                                           </div>
+                                        </div>
+                                    )})}
+                                </div>
+                            )}
                         </div>
                     )}
                     
@@ -1193,41 +1282,40 @@ Hinglish, warm, friendly. No markdown.`
                         </div>
                     )}
                 </div>
-
             </div>
-          </div>
+        </div>
 
-          {[...Array(20)].map((_, i) => {
-              if (!celebration) return null;
-              const colors = ["#00A8D6","#FF6B6B","#4ECDC4","#FFE66D","#A8E6CF","#FF8B94"];
-              const config = {
-                  left: `${Math.random() * 100}%`,
-                  size: `${6 + Math.random() * 6}px`,
-                  bg: colors[Math.floor(Math.random() * colors.length)],
-                  animDelay: `${Math.random() * 0.5}s`
-              };
-              return (
-                  <div key={`confetti-${i}`} className="fixed top-0 rounded-full z-[110]"
-                  style={{
-                      left: config.left, width: config.size, height: config.size, backgroundColor: config.bg,
-                      animation: `confettiFall 1.5s ease forwards`, animationDelay: config.animDelay
-                  }}/>
-              )
-          })}
+        {[...Array(20)].map((_, i) => {
+            if (!celebration) return null;
+            const colors = ["#00A8D6","#FF6B6B","#4ECDC4","#FFE66D","#A8E6CF","#FF8B94"];
+            const config = {
+                left: `${Math.random() * 100}%`,
+                size: `${6 + Math.random() * 6}px`,
+                bg: colors[Math.floor(Math.random() * colors.length)],
+                animDelay: `${Math.random() * 0.5}s`
+            };
+            return (
+                <div key={`confetti-${i}`} className="fixed top-0 rounded-full z-[110]"
+                style={{
+                    left: config.left, width: config.size, height: config.size, backgroundColor: config.bg,
+                    animation: `confettiFall 1.5s ease forwards`, animationDelay: config.animDelay
+                }}/>
+            )
+        })}
 
-          {/* CELEBRATION OVERLAY */}
-          {celebration && (
-              <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40">
-                  <div className="bg-white rounded-[24px] p-[32px] text-center" style={{ animation: 'popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
-                      <div className="text-[64px] mb-2 leading-none" style={{ animation: 'checkBounce 0.6s ease' }}>{celebration.emoji}</div>
-                      <h2 className="text-[24px] font-bold text-[#00A8D6] mb-2">🎉 Amazing!</h2>
-                      <p className="text-[14px] text-[#9ca3af] italic max-w-[220px] mx-auto">{celebration.quote}</p>
-                  </div>
-              </div>
-          )}
+        {/* CELEBRATION OVERLAY */}
+        {celebration && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40">
+                <div className="bg-white rounded-[24px] p-[32px] text-center" style={{ animation: 'popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
+                    <div className="text-[64px] mb-2 leading-none" style={{ animation: 'checkBounce 0.6s ease' }}>{celebration.emoji}</div>
+                    <h2 className="text-[24px] font-bold text-[#00A8D6] mb-2">🎉 Amazing!</h2>
+                    <p className="text-[14px] text-[#9ca3af] italic max-w-[220px] mx-auto">{celebration.quote}</p>
+                </div>
+            </div>
+        )}
 
-          {/* ADD HABIT MODAL */}
-          {showAddModal && (
+        {/* ADD HABIT MODAL */}
+        {showAddModal && (
             <div className="fixed inset-0 z-[60] bg-black/50 flex items-end sm:items-center justify-center">
                 <div className="bg-white w-full max-w-sm rounded-t-[24px] sm:rounded-[24px] p-[24px] max-h-[90vh] overflow-y-auto hide-scrollbar relative"
                      style={{ animation: 'slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
@@ -1302,6 +1390,98 @@ Hinglish, warm, friendly. No markdown.`
                              ))}
                         </div>
                     </div>
+
+                    {/* Frequency Section */}
+                    <div style={{marginBottom: '16px'}}>
+                      <p style={{
+                        fontFamily: "'Nunito', sans-serif",
+                        fontWeight: '700',
+                        fontSize: '14px',
+                        color: '#1a1a1a',
+                        marginBottom: '8px'
+                      }}>Frequency</p>
+                      
+                      {/* Frequency Type */}
+                      <div style={{
+                        display: 'flex',
+                        gap: '8px',
+                        marginBottom: '12px'
+                      }}>
+                        {[
+                          {id:'daily', label:'Daily'},
+                          {id:'specific', label:'Specific Days'},
+                          {id:'always', label:'Always On'}
+                        ].map(f => (
+                          <button
+                            key={f.id}
+                            type="button"
+                            onClick={() => setNewHabit(prev => ({
+                              ...prev,
+                              frequency: f.id
+                            }))}
+                            style={{
+                              flex: 1,
+                              padding: '8px 4px',
+                              borderRadius: '12px',
+                              border: '1.5px solid',
+                              borderColor: newHabit.frequency === f.id
+                                ? '#00A8D6' : '#E0F4FB',
+                              background: newHabit.frequency === f.id
+                                ? '#00A8D6' : 'white',
+                              color: newHabit.frequency === f.id
+                                ? 'white' : '#9ca3af',
+                              fontFamily: "'Nunito', sans-serif",
+                              fontWeight: '700',
+                              fontSize: '12px',
+                              cursor: 'pointer'
+                            }}
+                          >{f.label}</button>
+                        ))}
+                      </div>
+
+                      {/* Specific Days Picker */}
+                      {newHabit.frequency === 'specific' && (
+                        <div style={{
+                          display: 'flex',
+                          gap: '6px',
+                          justifyContent: 'center'
+                        }}>
+                          {['S','M','T','W','T','F','S'].map((d, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => {
+                                const days = newHabit.specificDays
+                                const newDays = days.includes(i)
+                                  ? days.filter(x => x !== i)
+                                  : [...days, i]
+                                setNewHabit(prev => ({
+                                  ...prev,
+                                  specificDays: newDays
+                                }))
+                              }}
+                              style={{
+                                width: '36px',
+                                height: '36px',
+                                borderRadius: '50%',
+                                border: '1.5px solid',
+                                borderColor: newHabit.specificDays.includes(i)
+                                  ? '#00A8D6' : '#E0F4FB',
+                                background: newHabit.specificDays.includes(i)
+                                  ? '#00A8D6' : 'white',
+                                color: newHabit.specificDays.includes(i)
+                                  ? 'white' : '#9ca3af',
+                                fontFamily: "'Nunito', sans-serif",
+                                fontWeight: '700',
+                                fontSize: '13px',
+                                cursor: 'pointer'
+                              }}
+                            >{d}</button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
 
                     {/* Notes */}
                     <div className="mb-[24px]">
