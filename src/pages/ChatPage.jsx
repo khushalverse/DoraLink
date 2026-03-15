@@ -29,18 +29,27 @@ export default function ChatPage() {
   const [displayName, setDisplayName] = useState('')
   const [profile, setProfile] = useState(null)
   const [userHabits, setUserHabits] = useState([])
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     if(user) {
       getUserProfile(user.id).then(p => {
         setProfile(p)
-        if(p?.display_name) {
+        if(p?.display_name && p.display_name.trim() !== '') {
           setDisplayName(p.display_name)
         } else {
           setDisplayName(
-            user?.email?.split('@')[0] || 'friend'
+            user?.user_metadata?.full_name ||
+            user?.email?.split('@')[0] || 
+            'friend'
           )
         }
+      }).catch(() => {
+        setDisplayName(
+          user?.user_metadata?.full_name ||
+          user?.email?.split('@')[0] || 
+          'friend'
+        )
       })
       getUserHabits(user.id).then(data => {
         if(data) {
@@ -426,6 +435,14 @@ export default function ChatPage() {
     setIsSidebarOpen(false);
   };
 
+  const filteredChats = searchQuery.trim()
+    ? savedChats.filter(chat =>
+        chat.title.toLowerCase().includes(
+          searchQuery.toLowerCase()
+        )
+      )
+    : savedChats
+
   return (
     <>
       <style>{`
@@ -519,13 +536,58 @@ export default function ChatPage() {
           </div>
 
           <div className="p-4 flex flex-col h-full relative z-10">
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: '#F0F9FF',
+              borderRadius: '12px',
+              padding: '10px 12px',
+              marginBottom: '12px'
+            }}>
+              <svg width="14" height="14"
+                viewBox="0 0 24 24" fill="none"
+                stroke="#9ca3af" strokeWidth="2.5"
+              >
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
               <input
-                type="text"
-                placeholder="Search"
-                className="w-full bg-[#F3F4F6] rounded-full py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-[#00A8D6]"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search chats..."
+                style={{
+                  flex: 1,
+                  border: 'none',
+                  outline: 'none',
+                  background: 'transparent',
+                  fontFamily: "'Nunito', sans-serif",
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  color: '#1a1a1a'
+                }}
               />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '0',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                >
+                  <svg width="14" height="14"
+                    viewBox="0 0 24 24" fill="none"
+                    stroke="#9ca3af" strokeWidth="2.5"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              )}
             </div>
             <button
               onClick={startNewChat}
@@ -709,16 +771,33 @@ export default function ChatPage() {
             </div>
             <div className="my-2 border-t border-gray-100" />
             <div className="flex-1 overflow-y-auto">
-              <h3 className="text-xs font-semibold text-[#6b7280] px-3 mb-2 uppercase tracking-wider">Recent</h3>
+              {!searchQuery && (
+                <h3 className="text-xs font-semibold text-[#6b7280] px-3 mb-2 uppercase tracking-wider">Recent</h3>
+              )}
               <div className="space-y-1 px-2">
-                {savedChats.length === 0 ? (
-                  <p style={{
-                    fontSize:'13px',
-                    color:'#9ca3af',
-                    padding:'8px 12px'
-                  }}>No chats yet</p>
+                {filteredChats.length === 0 ? (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '20px 12px'
+                  }}>
+                    <p style={{
+                      fontSize: '24px',
+                      marginBottom: '8px'
+                    }}>🔍</p>
+                    <p style={{
+                      fontFamily: "'Nunito', sans-serif",
+                      fontSize: '13px',
+                      color: '#9ca3af',
+                      fontWeight: '600'
+                    }}>
+                      {searchQuery 
+                        ? 'Koi chat nahi mila!'
+                        : 'No chats yet!'
+                      }
+                    </p>
+                  </div>
                 ) : (
-                  savedChats.map(chat => (
+                  filteredChats.map(chat => (
                     <div key={chat.id}
                       onClick={() => loadChat(chat)}
                       style={{
@@ -769,7 +848,7 @@ export default function ChatPage() {
                   {(user?.user_metadata?.full_name || user?.email || 'K')[0].toUpperCase()}
                 </div>
                 <span className="ml-3 text-sm font-medium truncate" style={{ fontFamily: "'Nunito', sans-serif" }}>
-                  {user?.user_metadata?.full_name || user?.email?.split('@')[0] || userName}
+                  {displayName}
                 </span>
               </div>
               <button 
