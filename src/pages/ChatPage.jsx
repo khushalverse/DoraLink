@@ -16,6 +16,7 @@ export default function ChatPage() {
     || user?.email?.split('@')[0] 
     || 'friend';
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showGadgets, setShowGadgets] = useState(false)
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -520,14 +521,142 @@ export default function ChatPage() {
             </button>
             <div className="my-4 border-t border-gray-100" />
             <div className="space-y-1 mb-6">
-              <button onClick={() => navigate('/habits')} className="flex items-center w-full py-2 px-3 hover:bg-gray-100 rounded-lg text-[#1a1a1a]">
-                <BarChart2 className="w-5 h-5 mr-3 text-[#6b7280]" />
-                <span className="text-sm" style={{ fontFamily: "'Nunito', sans-serif" }}>Habit Tracker</span>
-              </button>
-              <button className="flex items-center w-full py-2 px-3 hover:bg-gray-100 rounded-lg text-[#1a1a1a]">
-                <Wrench className="w-5 h-5 mr-3 text-[#6b7280]" />
-                <span className="text-sm" style={{ fontFamily: "'Nunito', sans-serif" }}>Gadgets</span>
-              </button>
+              {/* Gadgets Section */}
+              <div>
+                <button
+                  onClick={() => setShowGadgets(!showGadgets)}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 12px',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    borderRadius: '10px',
+                    transition: 'background 0.2s'
+                  }}
+                  onMouseEnter={e => 
+                    e.currentTarget.style.background='#F0F9FF'
+                  }
+                  onMouseLeave={e => 
+                    e.currentTarget.style.background='none'
+                  }
+                >
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}>
+                    <span style={{fontSize: '18px'}}>🎯</span>
+                    <span style={{
+                      fontFamily: "'Nunito', sans-serif",
+                      fontWeight: '700',
+                      fontSize: '15px',
+                      color: '#1a1a1a'
+                    }}>Gadgets</span>
+                  </div>
+                  <svg 
+                    width="16" height="16" 
+                    viewBox="0 0 24 24" fill="none"
+                    stroke="#9ca3af" strokeWidth="2.5"
+                    style={{
+                      transform: showGadgets 
+                        ? 'rotate(180deg)' : 'rotate(0)',
+                      transition: 'transform 0.2s ease'
+                    }}
+                  >
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
+
+                {/* Gadgets Grid */}
+                {showGadgets && (
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '8px',
+                    padding: '8px 12px',
+                    animation: 'fadeUp 0.2s ease'
+                  }}>
+                    {[
+                      {
+                        emoji: '🧮',
+                        name: 'Calculator',
+                        desc: 'Smart calc',
+                        route: '/calculator',
+                        color: '#E0F4FB'
+                      },
+                      {
+                        emoji: '🔜',
+                        name: 'Coming Soon',
+                        desc: 'More tools',
+                        route: null,
+                        color: '#F3F4F6'
+                      },
+                      {
+                        emoji: '🔜',
+                        name: 'Coming Soon',
+                        desc: 'More tools',
+                        route: null,
+                        color: '#F3F4F6'
+                      }
+                    ].map((gadget, i) => (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          if(gadget.route) {
+                            window.location.href = gadget.route
+                            setIsSidebarOpen(false)
+                          }
+                        }}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '14px 8px',
+                          background: gadget.color,
+                          border: 'none',
+                          borderRadius: '16px',
+                          cursor: gadget.route 
+                            ? 'pointer' : 'default',
+                          opacity: gadget.route ? 1 : 0.5,
+                          transition: 'transform 0.2s',
+                          gap: '6px'
+                        }}
+                        onMouseEnter={e => {
+                          if(gadget.route)
+                            e.currentTarget.style.transform
+                              ='scale(1.05)'
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.transform
+                            ='scale(1)'
+                        }}
+                      >
+                        <span style={{fontSize: '28px'}}>
+                          {gadget.emoji}
+                        </span>
+                        <span style={{
+                          fontFamily: "'Nunito', sans-serif",
+                          fontWeight: '700',
+                          fontSize: '12px',
+                          color: '#1a1a1a',
+                          textAlign: 'center'
+                        }}>{gadget.name}</span>
+                        <span style={{
+                          fontFamily: "'Nunito', sans-serif",
+                          fontSize: '10px',
+                          color: '#9ca3af',
+                          textAlign: 'center'
+                        }}>{gadget.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="my-2 border-t border-gray-100" />
             <div className="flex-1 overflow-y-auto">
