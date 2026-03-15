@@ -1,6 +1,38 @@
 import { getActiveConfig } from './aiConfig'
 import { buildSystemPrompt } from './aiPersonality'
 
+const searchWeb = async (query) => {
+  try {
+    const response = await fetch(
+      'https://api.tavily.com/search',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${
+            import.meta.env.VITE_TAVILY_API_KEY
+          }`
+        },
+        body: JSON.stringify({
+          query: query,
+          max_results: 3,
+          search_depth: 'basic'
+        })
+      }
+    )
+    const data = await response.json()
+    if(data.results) {
+      return data.results.map(r => 
+        `${r.title}: ${r.content}`
+      ).join('\n\n')
+    }
+    return null
+  } catch(err) {
+    console.error('Tavily error:', err)
+    return null
+  }
+}
+
 const callGemini = async (
   userMessage, 
   systemPrompt, 
@@ -91,15 +123,50 @@ export const callAI = async (
   const config = getActiveConfig()
   if(maxTokens) config.maxTokens = maxTokens
 
+  // Detect if web search needed
+  const searchKeywords = [
+    'today', 'aaj', 'current', 'abhi',
+    'latest', 'news', 'price', 'weather',
+    'score', 'result', 'date', 'time',
+    'kya chal raha', 'recent', 'new',
+    '2025', '2026', 'live'
+  ]
+  
+  const needsSearch = searchKeywords.some(k => 
+    userMessage.toLowerCase().includes(k)
+  )
+
+  let enhancedMessage = userMessage
+  
+  if(needsSearch) {
+    const searchResults = await searchWeb(
+      userMessage
+    )
+    if(searchResults) {
+      enhancedMessage = `${userMessage}
+
+[Web Search Results]:
+${searchResults}
+
+Use above search results to answer accurately.`
+    }
+  }
+
   try {
     if(config.provider === 'gemini') {
       return await callGemini(
-        userMessage, systemPrompt, chatHistory, config
+        enhancedMessage,
+        systemPrompt,
+        chatHistory,
+        config
       )
     }
     if(config.provider === 'groq') {
       return await callGroq(
-        userMessage, systemPrompt, chatHistory, config
+        enhancedMessage,
+        systemPrompt,
+        chatHistory,
+        config
       )
     }
     throw new Error('Unknown provider')
