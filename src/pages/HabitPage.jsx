@@ -307,47 +307,105 @@ export default function HabitPage() {
   const getCoachAdvice = async (type) => {
       setCoachLoading(true);
       
-      const todayStr = getTodayStr();
-      const completedTdy = habits.filter(h => h.completedDates?.includes(todayStr)).length;
-      const totHabits = habits.length;
+      const todayStr = new Date().toDateString()
+      const completedToday = habits.filter(h => 
+        h.completedDates.some(d => 
+          new Date(d).toDateString() === todayStr
+        )
+      ).length
+      const totalHabits = habits.filter(
+        h => !h.isPaused
+      ).length
       const avgStreak = habits.length > 0
-        ? Math.round(habits.reduce((sum,h) => sum + h.streak, 0) / habits.length)
-        : 0;
-        
-      const habitSummary = habits.map(h => 
-        `${h.emoji} ${h.name} (${h.category}, streak: ${h.streak}, completed today: ${h.completedDates?.includes(todayStr)})`
-      ).join('\\n');
-      
+        ? Math.round(
+            habits.reduce((sum, h) => 
+              sum + h.streak, 0
+            ) / habits.length
+          )
+        : 0
+      const bestStreak = habits.length > 0
+        ? Math.max(...habits.map(h => h.bestStreak))
+        : 0
+      const habitSummary = habits.map(h => {
+        const doneToday = h.completedDates.some(d =>
+          new Date(d).toDateString() === todayStr
+        )
+        return `${h.emoji} ${h.name} (Category: ${h.category}, Current streak: ${h.streak} days, Best streak: ${h.bestStreak} days, Total completions: ${h.totalCompletions}, Done today: ${doneToday}, Paused: ${h.isPaused})`
+      }).join('\n')
+
+      const weekData = () => {
+        const last7 = []
+        for(let i = 6; i >= 0; i--) {
+          const d = new Date()
+          d.setDate(d.getDate() - i)
+          const dStr = d.toDateString()
+          const done = habits.filter(h =>
+            h.completedDates.some(dd =>
+              new Date(dd).toDateString() === dStr
+            )
+          ).length
+          last7.push(`${d.toLocaleDateString('en',{weekday:'short'})}: ${done}/${totalHabits}`)
+        }
+        return last7.join(', ')
+      }
+
       const prompts = {
-        analyze: `You are DoraLink AI Coach - witty, smart, Hinglish-friendly.
-          Analyze these habits and give SHORT (3-4 lines) insights:
-          Habits: ${habitSummary}
-          Completed today: ${completedTdy}/${totHabits}
-          Average streak: ${avgStreak} days
-          Current XP: ${xp}
-          Be specific, encouraging, use emojis, Hinglish style.`,
+        analyze: `You are DoraLink AI Coach - witty, Hinglish-friendly.
+User's complete habit data:
+${habitSummary}
+
+Stats:
+- Total active habits: ${totalHabits}
+- Completed today: ${completedToday}/${totalHabits}
+- Average streak: ${avgStreak} days
+- Best streak ever: ${bestStreak} days
+- Current XP: ${xp}
+- Last 7 days: ${weekData()}
+
+Give SHORT (4-5 lines) specific analysis based on THIS data.
+Mention specific habits by name.
+Be encouraging, Hinglish, use emojis.
+No markdown bold/italic.`,
+
         suggest: `You are DoraLink AI Coach.
-          Based on these existing habits:
-          ${habitSummary}
-          Suggest ONE new powerful habit that complements these.
-          Format: 
-          "Habit: [name]
-          Why: [1 line reason]
-          Start with: [tiny first step]"
-          Keep it SHORT, Hinglish, fun!`,
+User's existing habits:
+${habitSummary}
+Categories covered: ${[...new Set(habits.map(h => h.category))].join(', ')}
+
+Suggest ONE new powerful habit that:
+1. Complements existing habits
+2. Fills a gap in their routine
+Format:
+Habit: [name]
+Why: [1 line specific reason]
+Start with: [tiny first step]
+Keep SHORT, Hinglish, fun! No markdown.`,
+
         streak: `You are DoraLink AI Coach.
-          User has these habits:
-          ${habitSummary}
-          Average streak: ${avgStreak} days
-          Give a SHORT motivational streak-building tip (3-4 lines).
-          Be funny, Hinglish, like a best friend pushing them!`,
+User's habits and streaks:
+${habitSummary}
+
+Average streak: ${avgStreak} days
+Best streak ever: ${bestStreak} days
+Last 7 days performance: ${weekData()}
+
+Give SHORT (4-5 lines) streak-building advice.
+Mention specific habits that need attention.
+Be funny, Hinglish, motivating!
+No markdown.`,
+
         struggling: `You are DoraLink AI Coach.
-          User is struggling with habits:
-          ${habitSummary}
-          Completed today: ${completedTdy}/${totHabits}
-          Give SHORT (3-4 lines) empathetic advice. Be supportive first, then give ONE practical tip.
-          Hinglish, warm, friendly tone.`
-      };
+User is struggling. Their data:
+${habitSummary}
+
+Completed today: ${completedToday}/${totalHabits}
+Average streak: ${avgStreak} days
+
+Give SHORT (4-5 lines) empathetic advice.
+Mention which specific habit to focus on first.
+Supportive tone, then ONE practical tip.
+Hinglish, warm, friendly. No markdown.`
+      }
       
       try {
         const msg = await callAI(
