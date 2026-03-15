@@ -176,6 +176,14 @@ export default function CalculatorPage() {
           color: '#00A8D6',
           fontSize: '20px'
         }
+      case 'science':
+        return { ...base,
+          background: '#EEF4FF',
+          color: '#6C5CE7',
+          fontSize: '13px',
+          padding: '14px 4px',
+          boxShadow: '0 2px 8px rgba(108,92,231,0.1)'
+        }
       default:
         return base
     }
@@ -202,6 +210,129 @@ export default function CalculatorPage() {
     { label:'.', type:'number' },
     { label:'=', type:'equals' },
   ]
+
+  const handleScience = (func) => {
+    setError('')
+    const num = parseFloat(display)
+    if(isNaN(num)) {
+      setError('Galat input! 😅')
+      return
+    }
+
+    let result
+    try {
+      switch(func) {
+        case 'sin':
+          result = Math.sin(num * Math.PI / 180)
+          break
+        case 'cos':
+          result = Math.cos(num * Math.PI / 180)
+          break
+        case 'tan':
+          if(num % 180 === 90) {
+            setError('Undefined! 😅')
+            return
+          }
+          result = Math.tan(num * Math.PI / 180)
+          break
+        case 'sin⁻¹':
+          if(num < -1 || num > 1) {
+            setError('Range -1 to 1! 😅')
+            return
+          }
+          result = Math.asin(num) * 180 / Math.PI
+          break
+        case 'cos⁻¹':
+          if(num < -1 || num > 1) {
+            setError('Range -1 to 1! 😅')
+            return
+          }
+          result = Math.acos(num) * 180 / Math.PI
+          break
+        case 'tan⁻¹':
+          result = Math.atan(num) * 180 / Math.PI
+          break
+        case 'log':
+          if(num <= 0) {
+            setError('Positive number chahiye! 😅')
+            return
+          }
+          result = Math.log10(num)
+          break
+        case 'ln':
+          if(num <= 0) {
+            setError('Positive number chahiye! 😅')
+            return
+          }
+          result = Math.log(num)
+          break
+        case '√':
+          if(num < 0) {
+            setError('Negative ka root nahi! 😅')
+            return
+          }
+          result = Math.sqrt(num)
+          break
+        case 'x²':
+          result = num * num
+          break
+        case 'x³':
+          result = num * num * num
+          break
+        case '1/x':
+          if(num === 0) {
+            setError('Zero se divide nahi! 😅')
+            return
+          }
+          result = 1 / num
+          break
+        case 'n!':
+          if(num < 0 || !Number.isInteger(num)) {
+            setError('Positive integer chahiye! 😅')
+            return
+          }
+          if(num > 20) {
+            setError('Too large! Max 20 😅')
+            return
+          }
+          result = factorial(num)
+          break
+        case 'π':
+          setDisplay(Math.PI.toString())
+          return
+        case 'e':
+          setDisplay(Math.E.toString())
+          return
+        case '(':
+          setExpression(prev => prev + '(')
+          return
+        case ')':
+          setExpression(prev => prev + ')')
+          return
+        default:
+          return
+      }
+
+      result = parseFloat(result.toFixed(10))
+      const historyItem = {
+        expression: func + '(' + num + ')',
+        result: result.toString()
+      }
+      setHistory(prev => 
+        [historyItem, ...prev.slice(0,4)]
+      )
+      setDisplay(result.toString())
+      setExpression(func + '(' + num + ') =')
+      setCalculated(true)
+    } catch(err) {
+      setError('Error! 😅')
+    }
+  }
+
+  const factorial = (n) => {
+    if(n === 0 || n === 1) return 1
+    return n * factorial(n - 1)
+  }
 
   return (
     <div style={{
@@ -393,8 +524,87 @@ export default function CalculatorPage() {
         </div>
       )}
 
+      {activeMode === 'science' && (
+        <div style={{
+          margin: '8px 16px',
+          position: 'relative',
+          zIndex: 1,
+          animation: 'popIn 0.3s ease'
+        }}>
+          {/* Science Extra Buttons */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: '8px',
+            marginBottom: '8px'
+          }}>
+            {[
+              {label:'sin', type:'science'},
+              {label:'cos', type:'science'},
+              {label:'tan', type:'science'},
+              {label:'π', type:'science'},
+              {label:'sin⁻¹', type:'science'},
+              {label:'cos⁻¹', type:'science'},
+              {label:'tan⁻¹', type:'science'},
+              {label:'e', type:'science'},
+              {label:'log', type:'science'},
+              {label:'ln', type:'science'},
+              {label:'√', type:'science'},
+              {label:'x²', type:'science'},
+              {label:'x³', type:'science'},
+              {label:'1/x', type:'science'},
+              {label:'n!', type:'science'},
+              {label:'()', type:'science'},
+            ].map((btn, i) => (
+              <button
+                key={i}
+                className="calc-btn"
+                onClick={() => handleScience(btn.label)}
+                style={{
+                  width: '100%',
+                  padding: '14px 4px',
+                  borderRadius: '16px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: "'Nunito', sans-serif",
+                  fontWeight: '700',
+                  fontSize: '13px',
+                  background: '#EEF4FF',
+                  color: '#6C5CE7',
+                  boxShadow: '0 2px 8px rgba(108,92,231,0.1)',
+                  transition: 'all 0.1s ease'
+                }}
+              >{btn.label}</button>
+            ))}
+          </div>
+
+          {/* Basic buttons below */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: '10px'
+          }}>
+            {buttons.map((btn, i) => (
+              <button
+                key={i}
+                className="calc-btn"
+                onClick={() => handleButton(btn.label)}
+                style={{
+                  ...buttonStyle(btn.type),
+                  gridColumn: btn.wide ? 'span 2' : 'span 1',
+                  aspectRatio: btn.wide ? 'auto' : '1',
+                  padding: btn.wide ? '20px' : undefined
+                }}
+              >
+                {btn.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Coming Soon for other modes */}
-      {activeMode !== 'basic' && (
+      {activeMode !== 'basic' && activeMode !== 'science' && (
         <div style={{
           margin: '16px',
           background: 'white',
