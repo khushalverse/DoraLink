@@ -114,6 +114,79 @@ const callGroq = async (
   return data.choices?.[0]?.message?.content || 'No response'
 }
 
+const needsSearch = (message) => {
+  const msg = message.toLowerCase()
+  
+  // DEFINITELY needs search - realtime data
+  const realtimePatterns = [
+    // News
+    'latest news', 'aaj ki news', 'breaking',
+    'current news', 'abhi kya hua',
+    // Sports
+    'ipl', 'cricket score', 'match result',
+    'who won', 'live score',
+    // Weather  
+    'weather', 'mausam', 'temperature',
+    'barish', 'aaj kitni garmi',
+    // Prices
+    'price today', 'aaj ka rate',
+    'stock price', 'share price',
+    'petrol price', 'gold rate',
+    'dollar rate', 'bitcoin',
+    // Current events
+    'election result', 'who is current',
+    'abhi kaun hai', 'latest update',
+    // Specific time queries
+    'aaj ka', 'today\'s', 'right now',
+    'is waqt', 'abhi abhi'
+  ]
+  
+  // NEVER needs search - AI can answer
+  const noSearchPatterns = [
+    // Math/calculations
+    'calculate', 'solve', 'what is',
+    'kitna hoga', 'formula',
+    // General knowledge (historical)
+    'who invented', 'kisne banaya',
+    'history of', 'explain',
+    'what is', 'define', 'meaning',
+    // Personal/app related
+    'who made you', 'kisne banaya tumhe',
+    'doralink', 'habit', 'calculator',
+    'meri habit', 'mera naam',
+    // Concepts
+    'how does', 'kaise kaam karta',
+    'difference between', 'vs',
+    'better option', 'suggest'
+  ]
+
+  // First check if it clearly doesnt need search
+  const definitelyNoSearch = noSearchPatterns.some(
+    p => msg.includes(p)
+  )
+  if(definitelyNoSearch) return false
+
+  // Then check if it needs realtime data
+  const definitelyNeedsSearch = realtimePatterns.some(
+    p => msg.includes(p)
+  )
+  if(definitelyNeedsSearch) return true
+
+  // For date/time - only if asking current
+  const dateTimePatterns = [
+    'aaj kya date', 'what date today',
+    'aaj konsa din', 'what day today',
+    'abhi kya time', 'current time',
+    'aaj ka date', "today's date"
+  ]
+  if(dateTimePatterns.some(p => msg.includes(p))) {
+    return false // We have date in system prompt!
+  }
+
+  // Default = no search (save credits!)
+  return false
+}
+
 export const callAI = async (
   userMessage,
   systemPrompt = '',
@@ -123,32 +196,20 @@ export const callAI = async (
   const config = getActiveConfig()
   if(maxTokens) config.maxTokens = maxTokens
 
-  // Detect if web search needed
-  const searchKeywords = [
-    'today', 'aaj', 'current', 'abhi',
-    'latest', 'news', 'price', 'weather',
-    'score', 'result', 'date', 'time',
-    'kya chal raha', 'recent', 'new',
-    '2025', '2026', 'live'
-  ]
-  
-  const needsSearch = searchKeywords.some(k => 
-    userMessage.toLowerCase().includes(k)
-  )
+  const shouldSearch = needsSearch(userMessage)
 
   let enhancedMessage = userMessage
   
-  if(needsSearch) {
-    const searchResults = await searchWeb(
-      userMessage
-    )
+  if(shouldSearch) {
+    console.log('🔍 Tavily search triggered')
+    const searchResults = await searchWeb(userMessage)
     if(searchResults) {
       enhancedMessage = `${userMessage}
 
-[Web Search Results]:
+[Web Search Results - Use this for accurate answer]:
 ${searchResults}
 
-Use above search results to answer accurately.`
+Answer based on above search results.`
     }
   }
 
