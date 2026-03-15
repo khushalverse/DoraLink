@@ -255,14 +255,15 @@ export default function ChatPage() {
   const isLoadingRef = useRef(false);
   const messagesEndRef = useRef(null);
   const abortControllerRef = useRef(null);
+  const shouldStopRef = useRef(false)
 
   const stopResponse = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
+    shouldStopRef.current = true
+    if(abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
     }
-    setIsTyping(false);
-    isLoadingRef.current = false;
+    setIsTyping(false)
   };
 
   // Auto-scroll to bottom of messages
@@ -298,7 +299,11 @@ export default function ChatPage() {
       userHabits
     )
     return await callAI(
-      userMessage, systemPrompt, history
+      userMessage,
+      systemPrompt,
+      history,
+      null,
+      abortControllerRef.current?.signal
     )
   }
 
@@ -314,9 +319,16 @@ export default function ChatPage() {
     return response.replace(/\[MEMORY:[^\]]+\]/g, '').trim();
   };
 
-  const typeMessage = async (msgId, fullText, allMessages) => {
+  const typeMessage = async (
+    msgId, fullText, allMessages
+  ) => {
     let displayed = ''
     for(let i = 0; i < fullText.length; i++) {
+      // Check stop ref every character
+      if(shouldStopRef.current === true) {
+        shouldStopRef.current = false
+        return
+      }
       displayed += fullText[i]
       setMessages(prev => prev.map(m => 
         m.id === msgId 
@@ -328,6 +340,7 @@ export default function ChatPage() {
   }
 
   const handleSend = async (textToUse) => {
+    shouldStopRef.current = false
     let text = typeof textToUse === 'string' ? textToUse.trim() : inputValue.trim();
     
     if(!text && !attachedFile) {
@@ -384,6 +397,7 @@ export default function ChatPage() {
       setMessages([...updatedMessages, typingMsg]);
 
       // ONE API call - guarded by isLoadingRef
+      abortControllerRef.current = new AbortController()
       const rawReply = await sendToGemini(text, updatedMessages);
       
       const reply = await parseAndSaveMemory(rawReply);

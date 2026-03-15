@@ -37,7 +37,8 @@ const callGemini = async (
   userMessage, 
   systemPrompt, 
   chatHistory, 
-  config
+  config,
+  signal = null
 ) => {
   const apiKey = config.customKey || config.apiKey
   const url = `${config.baseUrl}/${config.model}:generateContent?key=${apiKey}`
@@ -56,6 +57,7 @@ const callGemini = async (
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    signal: signal,
     body: JSON.stringify({
       system_instruction: systemPrompt 
         ? { parts: [{ text: systemPrompt }] } 
@@ -78,7 +80,8 @@ const callGroq = async (
   userMessage,
   systemPrompt,
   chatHistory,
-  config
+  config,
+  signal = null
 ) => {
   const apiKey = config.customKey || config.apiKey
   const url = `${config.baseUrl}/chat/completions`
@@ -106,7 +109,8 @@ const callGroq = async (
       messages,
       max_tokens: config.maxTokens,
       temperature: 0.9
-    })
+    }),
+    signal: signal
   })
 
   const data = await response.json()
@@ -191,7 +195,8 @@ export const callAI = async (
   userMessage,
   systemPrompt = '',
   chatHistory = [],
-  maxTokens = null
+  maxTokens = null,
+  signal = null
 ) => {
   const config = getActiveConfig()
   if(maxTokens) config.maxTokens = maxTokens
@@ -219,7 +224,8 @@ Answer based on above search results.`
         enhancedMessage,
         systemPrompt,
         chatHistory,
-        config
+        config,
+        signal
       )
     }
     if(config.provider === 'groq') {
@@ -227,11 +233,15 @@ Answer based on above search results.`
         enhancedMessage,
         systemPrompt,
         chatHistory,
-        config
+        config,
+        signal
       )
     }
     throw new Error('Unknown provider')
   } catch(err) {
+    if(err.name === 'AbortError') {
+      return ''
+    }
     console.error('[DoraLink AI Error]:', err)
     throw err
   }
