@@ -178,3 +178,26 @@ export const deleteHabitFromDb = async (habitId) => {
     .eq('id', habitId)
   if(error) throw error
 }
+
+export const getUserProfile = async (userId) => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single()
+  if(error) return null
+  return data
+}
+
+export const updateUserProfile = async (
+  userId, updates
+) => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(updates)
+    .eq('id', userId)
+    .select()
+    .single()
+  if(error) throw error
+  return data
+}

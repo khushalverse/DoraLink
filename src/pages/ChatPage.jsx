@@ -7,7 +7,7 @@ import {
   Plus, Mic, ArrowUp, ChevronDown, MoreVertical, LogOut, Trash2, Camera, ImageIcon, X, Paperclip
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { saveChat, saveMessage, getUserChats, getChatMessages, deleteChat, saveMemory, getUserMemory } from '../services/supabase';
+import { saveChat, saveMessage, getUserChats, getChatMessages, deleteChat, saveMemory, getUserMemory, getUserProfile } from '../services/supabase';
 
 export default function ChatPage() {
   const navigate = useNavigate();
@@ -25,6 +25,21 @@ export default function ChatPage() {
   const [userMemory, setUserMemory] = useState([]);
   const [showEmptyWarning, setShowEmptyWarning] = useState(false);
   const [showMicPermission, setShowMicPermission] = useState(false);
+  const [displayName, setDisplayName] = useState('')
+
+  useEffect(() => {
+    if(user) {
+      getUserProfile(user.id).then(profile => {
+        if(profile?.display_name) {
+          setDisplayName(profile.display_name)
+        } else {
+          setDisplayName(
+            user?.email?.split('@')[0] || 'friend'
+          )
+        }
+      })
+    }
+  }, [user])
 
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [attachedFile, setAttachedFile] = useState(null);
@@ -246,10 +261,7 @@ export default function ChatPage() {
   }, [messages, userScrolled]);
 
   const sendToGemini = async (userMessage, history) => {
-    const userName = user?.user_metadata?.full_name 
-      || user?.email?.split('@')[0] 
-      || 'friend'
-    const systemPrompt = buildSystemPrompt(userName)
+    const systemPrompt = buildSystemPrompt(displayName)
     return await callAI(userMessage, systemPrompt, history)
   }
 
@@ -735,7 +747,7 @@ export default function ChatPage() {
                           fontWeight:'700',
                           fontSize:'14px',
                           color:'#1a1a1a'
-                        }}>{userName}</div>
+                        }}>{displayName}</div>
                         <div style={{
                           fontSize:'11px',
                           color:'#9ca3af'
@@ -763,6 +775,15 @@ export default function ChatPage() {
                         sub:'Track your habits',
                         onClick: () => {
                           window.location.href = '/habits'
+                          setShowSettingsMenu(false)
+                        }
+                      },
+                      { 
+                        icon: '👤', 
+                        label: 'My Profile', 
+                        sub: 'Edit name & bio',
+                        onClick: () => {
+                          window.location.href = '/profile'
                           setShowSettingsMenu(false)
                         }
                       },
@@ -887,7 +908,7 @@ export default function ChatPage() {
                   onError={(e) => { e.target.style.display = 'none' }}
                 />
                 <h1 className="text-2xl font-bold text-center mb-10 text-[#1a1a1a]" style={{ fontFamily: "'Nunito', sans-serif", animation: 'fadeUp 0.4s ease 0.2s both' }}>
-                  {userName} ke liye kya kar sakta hun?
+                  {displayName} ke liye kya kar sakta hun?
                 </h1>
                 <div className="grid grid-cols-2 gap-3 w-full max-w-md relative z-10">
                   {[

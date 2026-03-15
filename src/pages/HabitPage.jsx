@@ -6,7 +6,8 @@ import {
   getUserHabits, 
   saveHabitToDb, 
   updateHabitInDb, 
-  deleteHabitFromDb 
+  deleteHabitFromDb,
+  getUserProfile
 } from '../services/supabase'
 
 export default function HabitPage() {
@@ -49,6 +50,21 @@ export default function HabitPage() {
   const [coachLoading, setCoachLoading] = useState(false);
   const [coachInput, setCoachInput] = useState('');
   const [coachHistory, setCoachHistory] = useState([]);
+  const [displayName, setDisplayName] = useState('')
+
+  useEffect(() => {
+    if(user) {
+      getUserProfile(user.id).then(profile => {
+        if(profile?.display_name) {
+          setDisplayName(profile.display_name)
+        } else {
+          setDisplayName(
+            user?.email?.split('@')[0] || 'friend'
+          )
+        }
+      })
+    }
+  }, [user])
 
   // AI Roast Mode States
   const [roastMode, setRoastMode] = useState(false);
@@ -376,7 +392,7 @@ Koi nahi, aaj se fresh start!
 Chal 5 min mein kar le — main wait kar raha hun 👀"
 
 "Wah wah! 🌟 2 din ka streak solid hai! 
-Keep this energy bro — 7 din ka milestone 
+Keep this energy ${displayName} — 7 din ka milestone 
 bahut paas hai! 💪"
 
 NO markdown. SHORT responses only!`
@@ -475,7 +491,7 @@ Koi nahi, aaj se fresh start!
 Chal 5 min mein kar le — main wait kar raha hun 👀"
 
 "Wah wah! 🌟 2 din ka streak solid hai! 
-Keep this energy bro — 7 din ka milestone 
+Keep this energy ${displayName} — 7 din ka milestone 
 bahut paas hai! 💪"
 
 NO markdown. SHORT responses only!`
