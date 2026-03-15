@@ -10,7 +10,15 @@ export default function CalculatorPage() {
   const [history, setHistory] = useState([])
   const [activeMode, setActiveMode] = useState('basic')
   const [error, setError] = useState('')
-  const [openSection, setOpenSection] = useState(null)
+  const [openSections, setOpenSections] = useState([])
+
+  const toggleSection = (id) => {
+    setOpenSections(prev =>
+      prev.includes(id)
+        ? prev.filter(s => s !== id)
+        : [...prev, id]
+    )
+  }
 
   const handleButton = (value) => {
     setError('')
@@ -232,7 +240,6 @@ export default function CalculatorPage() {
     { label:'0', type:'number' },
     { label:'.', type:'number' },
     { label:'=', type:'equals' },
-    { label:'', type:'empty' },
   ]
 
   const handleScience = (func) => {
@@ -597,20 +604,17 @@ export default function CalculatorPage() {
             >
               {/* Section Header */}
               <button
-                onClick={() => setOpenSection(
-                  openSection === section.id 
-                    ? null : section.id
-                )}
+                onClick={() => toggleSection(section.id)}
                 style={{
                   width: '100%',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '6px 10px',
-                  background: openSection === section.id
+                  background: openSections.includes(section.id)
                     ? section.color : 'white',
                   border: `1.5px solid ${section.color}`,
-                  borderRadius: openSection === section.id
+                  borderRadius: openSections.includes(section.id)
                     ? '12px 12px 0 0' : '12px',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
@@ -627,7 +631,7 @@ export default function CalculatorPage() {
                   stroke={section.textColor}
                   strokeWidth="2.5"
                   style={{
-                    transform: openSection === section.id
+                    transform: openSections.includes(section.id)
                       ? 'rotate(180deg)' : 'rotate(0)',
                     transition: 'transform 0.2s ease'
                   }}
@@ -637,7 +641,7 @@ export default function CalculatorPage() {
               </button>
 
               {/* Section Content */}
-              {openSection === section.id && (
+              {openSections.includes(section.id) && (
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: 
@@ -658,7 +662,7 @@ export default function CalculatorPage() {
                       className="calc-btn"
                       onClick={() => {
                         handleScience(f)
-                        setOpenSection(null)
+                        setOpenSections(prev => prev.filter(id => id !== section.id))
                       }}
                       style={{
                         padding: '8px 2px',
@@ -695,8 +699,9 @@ export default function CalculatorPage() {
                   width: '100%',
                   height: '42px',
                   borderRadius: '10px',
-                  border: btn.type === 'empty' ? 'none' : 'none',
-                  cursor: btn.type === 'empty' ? 'default' : 'pointer',
+                  border: 'none',
+                  cursor: 'pointer',
+                  gridColumn: btn.label === '=' ? 'span 2' : 'span 1',
                   fontFamily: "'Nunito', sans-serif",
                   fontWeight: '800',
                   fontSize: btn.type === 'number' 
