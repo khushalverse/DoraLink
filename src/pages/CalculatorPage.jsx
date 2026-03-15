@@ -12,6 +12,21 @@ export default function CalculatorPage() {
   const [error, setError] = useState('')
   const [openSections, setOpenSections] = useState([])
 
+  // Commerce States
+  const [commerceSection, setCommerceSection] = useState(null)
+  const [gst, setGst] = useState({ amount: '', rate: '18', type: 'add' })
+  const [gstResult, setGstResult] = useState(null)
+  const [pl, setPl] = useState({ cost: '', selling: '' })
+  const [plResult, setPlResult] = useState(null)
+  const [si, setSi] = useState({ principal: '', rate: '', time: '' })
+  const [siResult, setSiResult] = useState(null)
+  const [ci, setCi] = useState({ principal: '', rate: '', time: '', frequency: '12' })
+  const [ciResult, setCiResult] = useState(null)
+  const [discount, setDiscount] = useState({ price: '', percent: '' })
+  const [discountResult, setDiscountResult] = useState(null)
+  const [emi, setEmi] = useState({ loan: '', rate: '', tenure: '' })
+  const [emiResult, setEmiResult] = useState(null)
+
   const toggleSection = (id) => {
     setOpenSections(prev =>
       prev.includes(id)
@@ -365,6 +380,116 @@ export default function CalculatorPage() {
     return n * factorial(n - 1)
   }
 
+  const calcGST = () => {
+    const amt = parseFloat(gst.amount)
+    const rate = parseFloat(gst.rate)
+    if(isNaN(amt) || amt <= 0) return
+    
+    if(gst.type === 'add') {
+      const gstAmt = (amt * rate) / 100
+      const total = amt + gstAmt
+      setGstResult({
+        original: amt.toFixed(2),
+        gstAmount: gstAmt.toFixed(2),
+        total: total.toFixed(2),
+        cgst: (gstAmt/2).toFixed(2),
+        sgst: (gstAmt/2).toFixed(2)
+      })
+    } else {
+      const original = (amt * 100) / (100 + rate)
+      const gstAmt = amt - original
+      setGstResult({
+        original: original.toFixed(2),
+        gstAmount: gstAmt.toFixed(2),
+        total: amt.toFixed(2),
+        cgst: (gstAmt/2).toFixed(2),
+        sgst: (gstAmt/2).toFixed(2)
+      })
+    }
+  }
+
+  const calcPL = () => {
+    const cost = parseFloat(pl.cost)
+    const selling = parseFloat(pl.selling)
+    if(isNaN(cost) || isNaN(selling) || cost <= 0) return
+    
+    const diff = selling - cost
+    const percent = (Math.abs(diff) / cost) * 100
+    setPlResult({
+      type: diff >= 0 ? 'Profit' : 'Loss',
+      amount: Math.abs(diff).toFixed(2),
+      percent: percent.toFixed(2),
+      cost: cost.toFixed(2),
+      selling: selling.toFixed(2)
+    })
+  }
+
+  const calcSI = () => {
+    const p = parseFloat(si.principal)
+    const r = parseFloat(si.rate)
+    const t = parseFloat(si.time)
+    if(isNaN(p) || isNaN(r) || isNaN(t)) return
+    
+    const interest = (p * r * t) / 100
+    const total = p + interest
+    setSiResult({
+      interest: interest.toFixed(2),
+      total: total.toFixed(2),
+      principal: p.toFixed(2)
+    })
+  }
+
+  const calcCI = () => {
+    const p = parseFloat(ci.principal)
+    const r = parseFloat(ci.rate)
+    const t = parseFloat(ci.time)
+    const n = parseFloat(ci.frequency)
+    if(isNaN(p)||isNaN(r)||isNaN(t)||isNaN(n)) return
+    
+    const amount = p * Math.pow(
+      (1 + r/(n*100)), n*t
+    )
+    const interest = amount - p
+    setCiResult({
+      total: amount.toFixed(2),
+      interest: interest.toFixed(2),
+      principal: p.toFixed(2)
+    })
+  }
+
+  const calcDiscount = () => {
+    const price = parseFloat(discount.price)
+    const pct = parseFloat(discount.percent)
+    if(isNaN(price) || isNaN(pct)) return
+    
+    const saved = (price * pct) / 100
+    const final = price - saved
+    setDiscountResult({
+      original: price.toFixed(2),
+      saved: saved.toFixed(2),
+      final: final.toFixed(2),
+      percent: pct.toFixed(1)
+    })
+  }
+
+  const calcEMI = () => {
+    const p = parseFloat(emi.loan)
+    const r = parseFloat(emi.rate) / (12 * 100)
+    const n = parseFloat(emi.tenure)
+    if(isNaN(p) || isNaN(r) || isNaN(n)) return
+    
+    const emiAmt = p * r * Math.pow(1+r,n) / 
+      (Math.pow(1+r,n) - 1)
+    const total = emiAmt * n
+    const interest = total - p
+    setEmiResult({
+      emi: emiAmt.toFixed(2),
+      total: total.toFixed(2),
+      interest: interest.toFixed(2),
+      principal: p.toFixed(2)
+    })
+  }
+
   return (
     <div style={{
       height: '100vh',
@@ -444,8 +569,8 @@ export default function CalculatorPage() {
       }}>
         {[
           {id:'basic', label:'🧮 Basic'},
-          {id:'science', label:'🔬 Science'},
-          {id:'commerce', label:'📊 Commerce'}
+          {id:'commerce', label:'📊 Commerce'},
+          {id:'science', label:'🔬 Science'}
         ].map(mode => (
           <button
             key={mode.id}
@@ -732,33 +857,487 @@ export default function CalculatorPage() {
         </div>
       )}
 
-      {/* Coming Soon for other modes */}
-      {activeMode !== 'basic' && activeMode !== 'science' && (
+      {activeMode === 'commerce' && (
         <div style={{
-          margin: '16px',
-          background: 'white',
-          borderRadius: '20px',
-          padding: '40px 20px',
-          textAlign: 'center',
-          boxShadow: '0 2px 8px rgba(0,168,214,0.08)',
-          position: 'relative', zIndex: 1
+          margin: '4px 16px',
+          position: 'relative',
+          zIndex: 1,
+          animation: 'popIn 0.3s ease',
+          overflowY: 'auto',
+          maxHeight: 'calc(100vh - 200px)',
+          paddingBottom: '16px'
         }}>
-          <div style={{fontSize: '48px', marginBottom: '12px'}}>
-            {activeMode === 'science' ? '🔬' : '📊'}
-          </div>
-          <p style={{
-            fontWeight: '800', fontSize: '18px',
-            color: '#1a1a1a', marginBottom: '8px'
-          }}>Coming Soon!</p>
-          <p style={{
-            fontSize: '14px', color: '#9ca3af',
-            fontFamily: "'Nunito', sans-serif"
-          }}>
-            {activeMode === 'science' 
-              ? 'Science mode - sin, cos, log aur more!'
-              : 'Commerce mode - GST, Interest, EMI aur more!'
+
+          {/* Input style helper */}
+          {(() => {
+            const inputStyle = {
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: '10px',
+              border: '1.5px solid #E0F4FB',
+              fontFamily: "'Nunito', sans-serif",
+              fontWeight: '600',
+              fontSize: '14px',
+              color: '#1a1a1a',
+              outline: 'none',
+              background: '#F8FDFF',
+              boxSizing: 'border-box'
             }
-          </p>
+
+            const resultBox = (content) => (
+              <div style={{
+                background: 'linear-gradient(135deg, #E0F4FB, #F0F9FF)',
+                borderRadius: '12px',
+                padding: '12px',
+                marginTop: '10px',
+                border: '1px solid #B8E4F5'
+              }}>
+                {content}
+              </div>
+            )
+
+            const resultRow = (label, value, highlight) => (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '4px'
+              }}>
+                <span style={{
+                  fontSize: '12px',
+                  color: '#9ca3af',
+                  fontWeight: '600',
+                  fontFamily: "'Nunito', sans-serif"
+                }}>{label}</span>
+                <span style={{
+                  fontSize: highlight ? '16px' : '14px',
+                  color: highlight ? '#00A8D6' : '#1a1a1a',
+                  fontWeight: '800',
+                  fontFamily: "'Nunito', sans-serif"
+                }}>₹{value}</span>
+              </div>
+            )
+
+            const calcBtn = (onClick) => (
+              <button
+                onClick={onClick}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  background: '#00A8D6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontFamily: "'Nunito', sans-serif",
+                  fontWeight: '800',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  marginTop: '8px'
+                }}
+              >Calculate</button>
+            )
+
+            const sections = [
+              {
+                id: 'gst',
+                label: '🧾 GST Calculator',
+                color: '#E8F5E9',
+                textColor: '#00B894',
+                content: (
+                  <div>
+                    <div style={{
+                      display:'flex', gap:'6px',
+                      marginBottom:'8px'
+                    }}>
+                      {['5','12','18','28'].map(r => (
+                        <button key={r}
+                          onClick={() => setGst(
+                            p => ({...p, rate:r})
+                          )}
+                          style={{
+                            flex:1, padding:'8px 0',
+                            borderRadius:'8px',
+                            border:'1.5px solid',
+                            borderColor: gst.rate===r
+                              ? '#00B894':'#E0F4FB',
+                            background: gst.rate===r
+                              ? '#00B894':'white',
+                            color: gst.rate===r
+                              ? 'white':'#9ca3af',
+                            fontFamily:"'Nunito', sans-serif",
+                            fontWeight:'700',
+                            fontSize:'13px',
+                            cursor:'pointer'
+                          }}
+                        >{r}%</button>
+                      ))}
+                    </div>
+                    <div style={{
+                      display:'flex', gap:'6px',
+                      marginBottom:'8px'
+                    }}>
+                      {[
+                        {v:'add',l:'Add GST'},
+                        {v:'remove',l:'Remove GST'}
+                      ].map(t => (
+                        <button key={t.v}
+                          onClick={() => setGst(
+                            p => ({...p, type:t.v})
+                          )}
+                          style={{
+                            flex:1, padding:'8px 0',
+                            borderRadius:'8px',
+                            border:'1.5px solid',
+                            borderColor: gst.type===t.v
+                              ? '#00A8D6':'#E0F4FB',
+                            background: gst.type===t.v
+                              ? '#00A8D6':'white',
+                            color: gst.type===t.v
+                              ? 'white':'#9ca3af',
+                            fontFamily:"'Nunito', sans-serif",
+                            fontWeight:'700',
+                            fontSize:'12px',
+                            cursor:'pointer'
+                          }}
+                        >{t.l}</button>
+                      ))}
+                    </div>
+                    <input
+                      type="number"
+                      value={gst.amount}
+                      onChange={e => setGst(
+                        p => ({...p, amount:e.target.value})
+                      )}
+                      placeholder="Enter amount (₹)"
+                      style={inputStyle}
+                    />
+                    {calcBtn(calcGST)}
+                    {gstResult && resultBox(
+                      <>
+                        {resultRow('Original', gstResult.original)}
+                        {resultRow('CGST', gstResult.cgst)}
+                        {resultRow('SGST', gstResult.sgst)}
+                        {resultRow('GST Amount', gstResult.gstAmount)}
+                        {resultRow('Total', gstResult.total, true)}
+                      </>
+                    )}
+                  </div>
+                )
+              },
+              {
+                id: 'pl',
+                label: '📈 Profit & Loss',
+                color: '#FFF3E0',
+                textColor: '#E17055',
+                content: (
+                  <div>
+                    <div style={{
+                      display:'grid',
+                      gridTemplateColumns:'1fr 1fr',
+                      gap:'8px', marginBottom:'0'
+                    }}>
+                      <input type="number"
+                        value={pl.cost}
+                        onChange={e => setPl(
+                          p => ({...p, cost:e.target.value})
+                        )}
+                        placeholder="Cost Price ₹"
+                        style={inputStyle}
+                      />
+                      <input type="number"
+                        value={pl.selling}
+                        onChange={e => setPl(
+                          p => ({...p, selling:e.target.value})
+                        )}
+                        placeholder="Selling Price ₹"
+                        style={inputStyle}
+                      />
+                    </div>
+                    {calcBtn(calcPL)}
+                    {plResult && resultBox(
+                      <>
+                        {resultRow('Cost Price', plResult.cost)}
+                        {resultRow('Selling Price', plResult.selling)}
+                        <div style={{
+                          display:'flex',
+                          justifyContent:'space-between',
+                          marginBottom:'4px'
+                        }}>
+                          <span style={{
+                            fontSize:'12px', color:'#9ca3af',
+                            fontWeight:'600',
+                            fontFamily:"'Nunito', sans-serif"
+                          }}>{plResult.type}</span>
+                          <span style={{
+                            fontSize:'16px', fontWeight:'800',
+                            fontFamily:"'Nunito', sans-serif",
+                            color: plResult.type === 'Profit'
+                              ? '#00B894' : '#FF4444'
+                          }}>₹{plResult.amount} ({plResult.percent}%)</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )
+              },
+              {
+                id: 'si',
+                label: '💰 Simple Interest',
+                color: '#E8EAF6',
+                textColor: '#6C5CE7',
+                content: (
+                  <div>
+                    <div style={{
+                      display:'grid',
+                      gridTemplateColumns:'1fr 1fr 1fr',
+                      gap:'6px'
+                    }}>
+                      <input type="number"
+                        value={si.principal}
+                        onChange={e => setSi(
+                          p => ({...p, principal:e.target.value})
+                        )}
+                        placeholder="Principal ₹"
+                        style={{...inputStyle, fontSize:'12px'}}
+                      />
+                      <input type="number"
+                        value={si.rate}
+                        onChange={e => setSi(
+                          p => ({...p, rate:e.target.value})
+                        )}
+                        placeholder="Rate %"
+                        style={{...inputStyle, fontSize:'12px'}}
+                      />
+                      <input type="number"
+                        value={si.time}
+                        onChange={e => setSi(
+                          p => ({...p, time:e.target.value})
+                        )}
+                        placeholder="Time (yr)"
+                        style={{...inputStyle, fontSize:'12px'}}
+                      />
+                    </div>
+                    {calcBtn(calcSI)}
+                    {siResult && resultBox(
+                      <>
+                        {resultRow('Principal', siResult.principal)}
+                        {resultRow('Interest', siResult.interest)}
+                        {resultRow('Total Amount', siResult.total, true)}
+                      </>
+                    )}
+                  </div>
+                )
+              },
+              {
+                id: 'ci',
+                label: '🏦 Compound Interest',
+                color: '#E3F2FD',
+                textColor: '#0078B8',
+                content: (
+                  <div>
+                    <div style={{
+                      display:'grid',
+                      gridTemplateColumns:'1fr 1fr',
+                      gap:'6px', marginBottom:'6px'
+                    }}>
+                      <input type="number"
+                        value={ci.principal}
+                        onChange={e => setCi(
+                          p => ({...p, principal:e.target.value})
+                        )}
+                        placeholder="Principal ₹"
+                        style={inputStyle}
+                      />
+                      <input type="number"
+                        value={ci.rate}
+                        onChange={e => setCi(
+                          p => ({...p, rate:e.target.value})
+                        )}
+                        placeholder="Rate %"
+                        style={inputStyle}
+                      />
+                      <input type="number"
+                        value={ci.time}
+                        onChange={e => setCi(
+                          p => ({...p, time:e.target.value})
+                        )}
+                        placeholder="Time (years)"
+                        style={inputStyle}
+                      />
+                      <select
+                        value={ci.frequency}
+                        onChange={e => setCi(
+                          p => ({...p, frequency:e.target.value})
+                        )}
+                        style={{...inputStyle}}
+                      >
+                        <option value="1">Yearly</option>
+                        <option value="2">Half Yearly</option>
+                        <option value="4">Quarterly</option>
+                        <option value="12">Monthly</option>
+                      </select>
+                    </div>
+                    {calcBtn(calcCI)}
+                    {ciResult && resultBox(
+                      <>
+                        {resultRow('Principal', ciResult.principal)}
+                        {resultRow('Interest Earned', ciResult.interest)}
+                        {resultRow('Total Amount', ciResult.total, true)}
+                      </>
+                    )}
+                  </div>
+                )
+              },
+              {
+                id: 'discount',
+                label: '🏷️ Discount Calculator',
+                color: '#FCE4EC',
+                textColor: '#E91E8C',
+                content: (
+                  <div>
+                    <div style={{
+                      display:'grid',
+                      gridTemplateColumns:'1fr 1fr',
+                      gap:'6px'
+                    }}>
+                      <input type="number"
+                        value={discount.price}
+                        onChange={e => setDiscount(
+                          p => ({...p, price:e.target.value})
+                        )}
+                        placeholder="Original Price ₹"
+                        style={inputStyle}
+                      />
+                      <input type="number"
+                        value={discount.percent}
+                        onChange={e => setDiscount(
+                          p => ({...p, percent:e.target.value})
+                        )}
+                        placeholder="Discount %"
+                        style={inputStyle}
+                      />
+                    </div>
+                    {calcBtn(calcDiscount)}
+                    {discountResult && resultBox(
+                      <>
+                        {resultRow('Original', discountResult.original)}
+                        {resultRow('You Save', discountResult.saved)}
+                        {resultRow('Final Price', discountResult.final, true)}
+                      </>
+                    )}
+                  </div>
+                )
+              },
+              {
+                id: 'emi',
+                label: '🏠 EMI Calculator',
+                color: '#F3E5F5',
+                textColor: '#9C27B0',
+                content: (
+                  <div>
+                    <div style={{
+                      display:'grid',
+                      gridTemplateColumns:'1fr 1fr 1fr',
+                      gap:'6px'
+                    }}>
+                      <input type="number"
+                        value={emi.loan}
+                        onChange={e => setEmi(
+                          p => ({...p, loan:e.target.value})
+                        )}
+                        placeholder="Loan ₹"
+                        style={{...inputStyle, fontSize:'12px'}}
+                      />
+                      <input type="number"
+                        value={emi.rate}
+                        onChange={e => setEmi(
+                          p => ({...p, rate:e.target.value})
+                        )}
+                        placeholder="Rate %"
+                        style={{...inputStyle, fontSize:'12px'}}
+                      />
+                      <input type="number"
+                        value={emi.tenure}
+                        onChange={e => setEmi(
+                          p => ({...p, tenure:e.target.value})
+                        )}
+                        placeholder="Months"
+                        style={{...inputStyle, fontSize:'12px'}}
+                      />
+                    </div>
+                    {calcBtn(calcEMI)}
+                    {emiResult && resultBox(
+                      <>
+                        {resultRow('Loan Amount', emiResult.principal)}
+                        {resultRow('Total Interest', emiResult.interest)}
+                        {resultRow('Total Payment', emiResult.total)}
+                        {resultRow('Monthly EMI', emiResult.emi, true)}
+                      </>
+                    )}
+                  </div>
+                )
+              }
+            ]
+
+            return sections.map(section => (
+              <div key={section.id}
+                style={{marginBottom:'6px'}}
+              >
+                <button
+                  onClick={() => setCommerceSection(
+                    commerceSection === section.id
+                      ? null : section.id
+                  )}
+                  style={{
+                    width:'100%',
+                    display:'flex',
+                    alignItems:'center',
+                    justifyContent:'space-between',
+                    padding:'10px 12px',
+                    background: commerceSection===section.id
+                      ? section.color : 'white',
+                    border:`1.5px solid ${section.color}`,
+                    borderRadius: commerceSection===section.id
+                      ? '12px 12px 0 0' : '12px',
+                    cursor:'pointer',
+                    transition:'all 0.2s ease'
+                  }}
+                >
+                  <span style={{
+                    fontFamily:"'Nunito', sans-serif",
+                    fontWeight:'700',
+                    fontSize:'13px',
+                    color: section.textColor
+                  }}>{section.label}</span>
+                  <svg width="14" height="14"
+                    viewBox="0 0 24 24" fill="none"
+                    stroke={section.textColor}
+                    strokeWidth="2.5"
+                    style={{
+                      transform: commerceSection===section.id
+                        ? 'rotate(180deg)':'rotate(0)',
+                      transition:'transform 0.2s ease'
+                    }}
+                  >
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
+
+                {commerceSection === section.id && (
+                  <div style={{
+                    padding:'12px',
+                    background: section.color,
+                    borderRadius:'0 0 12px 12px',
+                    border:`1.5px solid ${section.color}`,
+                    borderTop:'none',
+                    animation:'fadeUp 0.2s ease'
+                  }}>
+                    {section.content}
+                  </div>
+                )}
+              </div>
+            ))
+          })()}
         </div>
       )}
 
