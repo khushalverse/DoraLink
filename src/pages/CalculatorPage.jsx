@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ArrowLeft, Delete } from 'lucide-react'
+import { ArrowLeft, Delete, X, Send } from 'lucide-react'
+import { callAI } from '../services/aiService'
 
 export default function CalculatorPage() {
   const [firstNum, setFirstNum] = useState('')
@@ -8,6 +9,11 @@ export default function CalculatorPage() {
   const [expression, setExpression] = useState('')
   const [calculated, setCalculated] = useState(false)
   const [history, setHistory] = useState([])
+
+  const [showAI, setShowAI] = useState(false)
+  const [aiMessages, setAiMessages] = useState([])
+  const [aiInput, setAiInput] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
   const [activeMode, setActiveMode] = useState('basic')
   const [error, setError] = useState('')
   const [openSections, setOpenSections] = useState([])
@@ -489,6 +495,93 @@ export default function CalculatorPage() {
       principal: p.toFixed(2)
     })
   }
+  const askCalculatorAI = async (question) => {
+    if(!question.trim() || aiLoading) return
+    
+    const userMsg = { role: 'user', content: question }
+    setAiMessages(prev => [...prev, userMsg])
+    setAiInput('')
+    setAiLoading(true)
+
+    const historyText = history.slice(0,3).map(h =>
+      `${h.expression} = ${h.result}`
+    ).join('\n')
+
+    const currentCalc = display !== '0' 
+      ? `Current display: ${display}` 
+      : ''
+    
+    const systemPrompt = `You are DoraLink Calculator AI — 
+a smart, witty math assistant!
+
+Current calculator state:
+- Mode: ${activeMode} calculator
+- ${currentCalc}
+- Expression: ${expression || 'none'}
+- Recent calculations:
+${historyText || 'none yet'}
+
+YOUR JOB:
+- Explain calculations clearly
+- Help with word problems
+- Give formulas and concepts
+- Real life examples
+- Exam tips for students
+
+PERSONALITY:
+- Hinglish naturally
+- Fun + educational
+- Short clear answers
+- Use emojis occasionally
+- Reference actual numbers from calculations
+- Never be boring!
+
+NO markdown bold/italic in responses.`
+
+    try {
+      const response = await callAI(
+        question,
+        systemPrompt,
+        aiMessages,
+        400
+      )
+      const aiMsg = { role: 'ai', content: response }
+      setAiMessages(prev => [...prev, aiMsg])
+    } catch(err) {
+      const errMsg = { 
+        role: 'ai', 
+        content: 'Oops! Network issue 😅 Try again!' 
+      }
+      setAiMessages(prev => [...prev, errMsg])
+    }
+    setAiLoading(false)
+  }
+  const quickButtons = {
+    basic: [
+      { label: '📖 Explain result', 
+        q: `Explain this calculation: ${expression} ${display}` },
+      { label: '🌍 Real life example',
+        q: `Give a real life example for: ${expression} ${display}` },
+      { label: '✏️ Word problem',
+        q: `Create a word problem using the number ${display}` }
+    ],
+    science: [
+      { label: '📐 Formula explain',
+        q: `Explain the formula used in: ${expression} = ${display}` },
+      { label: '🔬 Concept samjhao',
+        q: `Explain the math concept behind: ${expression} = ${display}` },
+      { label: '📝 Exam tip do',
+        q: `Give an exam tip for: ${expression} = ${display}` }
+    ],
+    commerce: [
+      { label: '💼 Matlab batao',
+        q: `Explain what this commerce calculation means: ${expression} = ${display}` },
+      { label: '📊 Better option',
+        q: `Suggest a better financial option based on: ${display}` },
+      { label: '🏦 Real example',
+        q: `Give a real world business example for: ${display}` }
+    ]
+  }
 
   return (
     <div style={{
@@ -514,6 +607,18 @@ export default function CalculatorPage() {
         }
         .science-scroll::-webkit-scrollbar { display: none; }
         .science-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes slideInUp {
+          from { transform: translateY(100%); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes typingDot {
+          0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+          40% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-10px); }
+        }
       `}</style>
 
       {/* Background blobs */}
@@ -1347,6 +1452,283 @@ export default function CalculatorPage() {
             ))
           })()}
         </div>
+      )}
+
+      {/* Floating AI Button */}
+      <button
+        onClick={() => setShowAI(true)}
+        style={{
+          position: 'fixed',
+          bottom: '90px',
+          right: '16px',
+          width: '52px',
+          height: '52px',
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #00A8D6, #0078B8)',
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 16px rgba(0,168,214,0.4)',
+          animation: 'float 3s ease-in-out infinite',
+          zIndex: 20,
+          fontSize: '24px'
+        }}
+      >🤖</button>
+
+      {showAI && (
+        <>
+          {/* Overlay */}
+          <div
+            onClick={() => setShowAI(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.35)',
+              zIndex: 40
+            }}
+          />
+
+          {/* Bottom Sheet */}
+          <div style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: 'white',
+            borderRadius: '28px 28px 0 0',
+            zIndex: 50,
+            maxHeight: '75vh',
+            display: 'flex',
+            flexDirection: 'column',
+            animation: 'slideInUp 0.3s ease',
+            boxShadow: '0 -8px 32px rgba(0,168,214,0.12)'
+          }}>
+            {/* Handle */}
+            <div style={{
+              width: '36px',
+              height: '4px',
+              background: '#E0F4FB',
+              borderRadius: '2px',
+              margin: '12px auto 0 auto'
+            }}/>
+
+            {/* Header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 20px'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <span style={{fontSize: '20px'}}>🤖</span>
+                <span style={{
+                  fontFamily: "'Nunito', sans-serif",
+                  fontWeight: '800',
+                  fontSize: '16px',
+                  color: '#00A8D6'
+                }}>DoraLink Calculator AI</span>
+              </div>
+              <button
+                onClick={() => {
+                  setShowAI(false)
+                  setAiMessages([])
+                  setAiInput('')
+                }}
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  background: '#F0F9FF',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '16px'
+                }}
+              >✕</button>
+            </div>
+
+            {/* Chat Messages */}
+            <div style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '0 16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              minHeight: '120px',
+              maxHeight: '250px'
+            }}>
+              {/* Welcome */}
+              {aiMessages.length === 0 && (
+                <div style={{
+                  background: 'linear-gradient(135deg, #E8F8FF, #D0F0FF)',
+                  border: '1px solid #B8E4F5',
+                  borderRadius: '18px 18px 18px 4px',
+                  padding: '12px 16px',
+                  fontFamily: "'Nunito', sans-serif",
+                  fontSize: '14px',
+                  color: '#1a1a1a',
+                  lineHeight: '1.5'
+                }}>
+                  🤖 Main hun tera Calculator AI! 
+                  Koi bhi calculation explain 
+                  karwao ya word problem solve 
+                  karwao — sab ho jaayega! 😄
+                </div>
+              )}
+
+              {/* Messages */}
+              {aiMessages.map((msg, i) => (
+                <div key={i} style={{
+                  display: 'flex',
+                  justifyContent: msg.role === 'user'
+                    ? 'flex-end' : 'flex-start'
+                }}>
+                  <div style={{
+                    maxWidth: '85%',
+                    padding: '10px 14px',
+                    borderRadius: msg.role === 'user'
+                      ? '18px 18px 4px 18px'
+                      : '18px 18px 18px 4px',
+                    background: msg.role === 'user'
+                      ? '#00A8D6'
+                      : 'linear-gradient(135deg, #E8F8FF, #D0F0FF)',
+                    border: msg.role === 'ai'
+                      ? '1px solid #B8E4F5' : 'none',
+                    color: msg.role === 'user'
+                      ? 'white' : '#1a1a1a',
+                    fontFamily: "'Nunito', sans-serif",
+                    fontSize: '14px',
+                    lineHeight: '1.5'
+                  }}>
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+
+              {/* Loading dots */}
+              {aiLoading && (
+                <div style={{display:'flex', justifyContent:'flex-start'}}>
+                  <div style={{
+                    padding: '10px 14px',
+                    background: 'linear-gradient(135deg, #E8F8FF, #D0F0FF)',
+                    borderRadius: '18px 18px 18px 4px',
+                    border: '1px solid #B8E4F5',
+                    display: 'flex',
+                    gap: '4px'
+                  }}>
+                    {[0,1,2].map(i => (
+                      <div key={i} style={{
+                        width: '6px', height: '6px',
+                        borderRadius: '50%',
+                        background: '#00A8D6',
+                        animation: 'typingDot 1.2s infinite',
+                        animationDelay: `${i * 0.15}s`
+                      }}/>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Buttons */}
+            <div style={{
+              padding: '8px 16px',
+              display: 'flex',
+              gap: '6px',
+              overflowX: 'auto',
+              scrollbarWidth: 'none'
+            }}>
+              {(quickButtons[activeMode] || quickButtons.basic)
+                .map((btn, i) => (
+                <button
+                  key={i}
+                  onClick={() => askCalculatorAI(btn.q)}
+                  style={{
+                    whiteSpace: 'nowrap',
+                    padding: '8px 12px',
+                    background: '#F0F9FF',
+                    border: '1.5px solid #E0F4FB',
+                    borderRadius: '20px',
+                    fontFamily: "'Nunito', sans-serif",
+                    fontWeight: '700',
+                    fontSize: '12px',
+                    color: '#00A8D6',
+                    cursor: 'pointer',
+                    flexShrink: 0
+                  }}
+                >{btn.label}</button>
+              ))}
+            </div>
+
+            {/* Input */}
+            <div style={{
+              display: 'flex',
+              gap: '8px',
+              padding: '8px 16px 24px 16px',
+              alignItems: 'center'
+            }}>
+              <input
+                value={aiInput}
+                onChange={e => setAiInput(e.target.value)}
+                onKeyDown={e => {
+                  if(e.key === 'Enter' && aiInput.trim()) {
+                    askCalculatorAI(aiInput)
+                  }
+                }}
+                placeholder="Kuch bhi poochho..."
+                style={{
+                  flex: 1,
+                  padding: '10px 14px',
+                  borderRadius: '20px',
+                  border: '1.5px solid #E0F4FB',
+                  fontFamily: "'Nunito', sans-serif",
+                  fontSize: '14px',
+                  outline: 'none',
+                  background: '#F8FDFF'
+                }}
+              />
+              <button
+                onClick={() => {
+                  if(aiInput.trim()) 
+                    askCalculatorAI(aiInput)
+                }}
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  background: aiInput.trim()
+                    ? '#00A8D6' : '#E0F4FB',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}
+              >
+                <svg width="16" height="16"
+                  viewBox="0 0 24 24" fill="none"
+                  stroke={aiInput.trim() 
+                    ? "white" : "#00A8D6"
+                  }
+                  strokeWidth="2.5"
+                >
+                  <line x1="12" y1="19" x2="12" y2="5"/>
+                  <polyline points="5 12 12 5 19 12"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
     </div>
