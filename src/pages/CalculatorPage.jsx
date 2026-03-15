@@ -212,6 +212,29 @@ export default function CalculatorPage() {
     { label:'=', type:'equals' },
   ]
 
+  const scienceButtons = [
+    { label:'C', type:'clear' },
+    { label:'±', type:'special' },
+    { label:'⌫', type:'special' },
+    { label:'÷', type:'operator' },
+    { label:'7', type:'number' },
+    { label:'8', type:'number' },
+    { label:'9', type:'number' },
+    { label:'×', type:'operator' },
+    { label:'4', type:'number' },
+    { label:'5', type:'number' },
+    { label:'6', type:'number' },
+    { label:'-', type:'operator' },
+    { label:'1', type:'number' },
+    { label:'2', type:'number' },
+    { label:'3', type:'number' },
+    { label:'+', type:'operator' },
+    { label:'0', type:'number' },
+    { label:'.', type:'number' },
+    { label:'=', type:'equals' },
+    { label:'', type:'empty' },
+  ]
+
   const handleScience = (func) => {
     setError('')
     const num = parseFloat(display)
@@ -570,7 +593,7 @@ export default function CalculatorPage() {
             }
           ].map(section => (
             <div key={section.id} 
-              style={{marginBottom: '4px'}}
+              style={{marginBottom: '3px'}}
             >
               {/* Section Header */}
               <button
@@ -583,7 +606,7 @@ export default function CalculatorPage() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '7px 10px',
+                  padding: '6px 10px',
                   background: openSection === section.id
                     ? section.color : 'white',
                   border: `1.5px solid ${section.color}`,
@@ -596,7 +619,7 @@ export default function CalculatorPage() {
                 <span style={{
                   fontFamily: "'Nunito', sans-serif",
                   fontWeight: '700',
-                  fontSize: '13px',
+                  fontSize: '12px',
                   color: section.textColor
                 }}>{section.label}</span>
                 <svg width="14" height="14"
@@ -656,32 +679,30 @@ export default function CalculatorPage() {
             </div>
           ))}
 
-          {/* Basic Calculator Buttons - compact grid */}
+          {/* Basic Calculator Buttons - science mode specific */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(4, 1fr)',
             gap: '4px',
             marginTop: '4px'
           }}>
-            {buttons.map((btn, i) => (
+            {scienceButtons.map((btn, i) => (
               <button
                 key={i}
                 className="calc-btn"
                 onClick={() => handleButton(btn.label)}
                 style={{
                   width: '100%',
-                  aspectRatio: btn.wide ? 'auto' : '1',
-                  height: btn.wide ? '44px' : undefined,
-                  padding: btn.wide ? '0' : undefined,
-                  gridColumn: btn.wide ? 'span 2' : 'span 1',
-                  borderRadius: '12px',
-                  border: 'none',
-                  cursor: 'pointer',
+                  height: '42px',
+                  borderRadius: '10px',
+                  border: btn.type === 'empty' ? 'none' : 'none',
+                  cursor: btn.type === 'empty' ? 'default' : 'pointer',
                   fontFamily: "'Nunito', sans-serif",
                   fontWeight: '800',
                   fontSize: btn.type === 'number' 
-                    ? '16px' : '14px',
+                    ? '15px' : '13px',
                   background:
+                    btn.type === 'empty' ? 'transparent' :
                     btn.type === 'number' ? 'white' :
                     btn.type === 'operator' ? '#E0F4FB' :
                     btn.type === 'equals' ? '#00A8D6' :
@@ -693,9 +714,10 @@ export default function CalculatorPage() {
                     btn.type === 'equals' ? 'white' :
                     btn.type === 'clear' ? '#FF4444' :
                     '#00A8D6',
-                  boxShadow: btn.type === 'equals'
-                    ? '0 3px 10px rgba(0,168,214,0.3)'
-                    : '0 1px 4px rgba(0,168,214,0.08)'
+                  boxShadow: 
+                    btn.type === 'empty' ? 'none' :
+                    btn.type === 'equals' ? '0 3px 10px rgba(0,168,214,0.3)' :
+                    '0 1px 4px rgba(0,168,214,0.08)'
                 }}
               >
                 {btn.label}
